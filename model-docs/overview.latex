@@ -7,6 +7,10 @@
 \chapter{Data Submission}
 \section{Overview of Data Submission Process}
 
+\noindent\colorbox{Red}{
+This section must be rewritten according to RD-Connect reality, so read it \textbf{with care}
+}
+
 There are four major steps in the data submission process:
 \begin{enumerate}
 \item Submit raw sequence data to the European Genome-phenome Archive%
