@@ -1,15 +1,16 @@
 % The fonts used in the document
 \ifxetex
-  \setmainfont{Open Sans}
+  \setmainfont{Gentium}
 %  \setmonofont[Scale=0.95]{Inconsolata}
   \setmonofont[Scale=0.88]{Consolas}
 \else
   \ifluatex
-    \setmainfont{Open Sans}
+    \setmainfont{Gentium}
 %    \setmonofont[Scale=0.95]{Inconsolata}
     \setmonofont[Scale=0.88]{Consolas}
   \else
-    \usepackage{opensans}
+    \setmainfont{Gentium}
+    %\usepackage{gentium}
     \usepackage[scaled=0.8]{beramono}
   \fi
 \fi
