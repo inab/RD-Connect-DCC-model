@@ -1,16 +1,16 @@
 % The fonts used in the document
 \ifxetex
-  \setmainfont{Gentium}
+  %\setmainfont[BoldFont={Gentium Basic Bold}]{Gentium Plus}
+  \setromanfont[BoldFont={Gentium Basic Bold}]{Gentium Plus}
 %  \setmonofont[Scale=0.95]{Inconsolata}
   \setmonofont[Scale=0.88]{Consolas}
 \else
   \ifluatex
-    \setmainfont{Gentium}
+    \setromanfont[BoldFont={Gentium Basic Bold}]{Gentium Plus}
 %    \setmonofont[Scale=0.95]{Inconsolata}
     \setmonofont[Scale=0.88]{Consolas}
   \else
-    \setmainfont{Gentium}
-    %\usepackage{gentium}
+    \setromanfont[BoldFont={Gentium Basic Bold}]{Gentium Plus}
     \usepackage[scaled=0.8]{beramono}
   \fi
 \fi
