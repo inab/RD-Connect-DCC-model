@@ -1,0 +1,149 @@
+%\section{Copy Number Germline Variations}\label{fea:cngv}
+
+%\begin{figure*}[!h]
+%\centering
+
+%\includegraphics[width=0.5\textwidth]{cngv.pdf}
+%\caption{Copy Number Germline Variations Sub-Schema}
+%\end{figure*}
+
+\paragraph{\Large Important Notes} ~\\
+\emph{(explanations adapted from ICGC DCC data model)}
+\paragraph{\textbf{chromosome coordinates}}
+\begin{itemize}
+	\item The first base of a chromosome starts at 1 and counts onward along the forward strand until the end.
+	\item The value of \texttt{chromosome\_start} must be less than or equal to \texttt{chromosome\_end}.
+	\item The size of a feature is calculated as: \texttt{chromosome\_end} - \texttt{chromosome\_start} + 1
+	\item For mutations that are single-base substitutions, deletions or multiple-base substitutions, use the start and end coordinates of the corresponding chromosome interval on the reference genome where the mutation occurs.
+	\item For mutations that are insertions, use the coordinates of the position on the chromosome that is immediately after the insertion point.
+\end{itemize}
+
+\paragraph{\texttt{chromosome\_strand}}
+\begin{itemize}
+	\item \texttt{chromosome\_strand} is used to record the reference genome strand on which the genotype alleles are located
+	\item In ICGC simple somatic mutation format, we require the forward strand sequence is always used for genotypes
+	\item \texttt{chromosome\_strand} does not have anything to do with the strandness of the gene that contains the simple mutation
+\end{itemize}
+
+\paragraph{\texttt{control\_genotype}, \texttt{sample\_genotype}}
+\begin{itemize}
+	\item Genotype is presented as nucleotide sequence of all allele(s). For example, in a diploid genome on chromosome 1 at position 12345, if one allele on the forward strand is A and the other is G, then the genotype is presented as A/G and \texttt{chromosome\_strand} being \emph{1} (i.e. forward strand)
+	\item In the case that the genotype is hemizygous (e.g. G allele is missing), it can be presented as A/-.
+	\item \texttt{control\_genotype} and \texttt{sample\_genotype} are used to record genotype for the matched control sample and the donor sample, respectively. Both genotypes must be presented using the same strand of the reference genome.
+\end{itemize}
+
+\paragraph{\texttt{reference\_genome\_allele}}
+\begin{itemize}
+	\item \texttt{reference\_genome\_allele} is the forward strand nucleotide(s) at the corresponding location on the reference genome where the somatic mutation is detected in the donor sample.
+\end{itemize}
+
+\paragraph{\large Examples of different types of simple somatic mutations}
+\paragraph{\textbf{How do I represent an insertion?}}
+\begin{itemize}
+	\item Use the position of the nucleotide on the chromosome that is immediately \textbf{after} the insertion point. The rationale is that the inserted base starts at the specified chromosome start position.
+	\item Example: an insertion of a single base "\textcolor[rgb]{1,0,0}{T}" after "\textcolor[rgb]{0,0,1}{A}" at position 56. Use position 56 to represent the insertion chromosome start position.
+\end{itemize}
+
+%!{\color{DarkOrange}\vrule}l*{4}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}
+
+\begin{center}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{4}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{Position}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{55}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{56}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{57}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{58}}} \\
+	Reference Genome & \textcolor[rgb]{0,0,1}{A} & \textcolor[rgb]{0,0,1}{G} & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{0,0,1}{A} \\
+	Sample Genome & \textcolor[rgb]{0,0,1}{A} & \textcolor[rgb]{1,0,0}{T} & \textcolor[rgb]{0,0,1}{G} & \textcolor[rgb]{0,0,1}{C} \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{center}
+
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{7}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutation type}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromsome start}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromosome end}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{reference genome allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{control genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{sample genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated from allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated to allele}}}  \\
+	insertion & 56 & 56 & - & -/- & -/T & - & T \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{adjustbox}
+
+\paragraph{\textbf{How do I represent an deletion?}}
+\begin{itemize}
+	\item Use the start position and end position of the deleted mutated fragment to represent the deletion.
+	\item Example: A deletion of \textcolor[rgb]{1,0,0}{TCTT} at chromosome start position 124.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{5}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{Position}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{123}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{124}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{125}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{126}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{127}}} \\
+	Reference Genome & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,0,1}{T} \\
+	Sample Genome & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{1,0,0}{T} & \textcolor[rgb]{1,0,0}{C} & \textcolor[rgb]{1,0,0}{T} & \textcolor[rgb]{1,0,0}{T} \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{center}
+
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{7}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutation type}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromsome start}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromosome end}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{reference genome allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{control genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{sample genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated from allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated to allele}}}  \\
+	deletion & 124 & 127 & TCTT & TCTT/TCTT & TCTT/- & TCTT & - \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{adjustbox}
+
+\paragraph{\textbf{How do I represent a single-base substitution?}}
+\begin{itemize}
+	\item Use the corresponding chromosome interval on the reference genome where the single-base mutation is located.
+	\item Example: A mutation occurs at position 51 where \textcolor[rgb]{0,0,1}{G} is substituted with \textcolor[rgb]{0,1,0}{C}. The chromosome start position will be 51.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{4}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{Position}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{55}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{56}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{57}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{58}}} \\
+	Reference Genome & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,0,1}{G} & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,0,1}{A} \\
+	Sample Genome & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,1,0}{C} & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,0,1}{A} \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{center}
+
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{7}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutation type}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromsome start}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromosome end}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{reference genome allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{control genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{sample genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated from allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated to allele}}}  \\
+	single-base substitution & 51 & 51 & G & G/G & G/C & G & C \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{adjustbox}
+
+\paragraph{\textbf{How do I represent a multiple-base substitution?}}
+\begin{itemize}
+	\item Use the start and end coordinates of the mutated fragment.
+	\item Example: The sequence \textcolor[rgb]{0,0,1}{ACTCAGACC} starting from position 50 to 58 is substituted with the sequence \textcolor[rgb]{0,1,0}{TTGT}.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{9}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{Position}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{50}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{51}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{52}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{53}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{54}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{55}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{56}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{57}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{58}}} \\
+	Reference Genome & \textcolor[rgb]{0,0,1}{A} & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{0,0,1}{T} & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{0,0,1}{A} & \textcolor[rgb]{0,0,1}{G} & \textcolor[rgb]{0,0,1}{A} & \textcolor[rgb]{0,0,1}{C} & \textcolor[rgb]{0,0,1}{C} \\
+	Sample Genome & \textcolor[rgb]{0,1,0}{T} & \textcolor[rgb]{0,1,0}{T} & \textcolor[rgb]{0,1,0}{G} & \textcolor[rgb]{0,1,0}{T} & & & & & \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{center}
+
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{7}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutation type}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromsome start}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromosome end}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{reference genome allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{control genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{sample genotype}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated from allele}}} & \multicolumn{1}{l}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated to allele}}}  \\
+	multiple-base substitution & 50 & 58 & ACTCAGACC & ACTCAGACC/ACTCAGACC & ACTCAGACC/TTGT & ACTCAGACC & TTGT \\
+	\arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{adjustbox}
+
+\paragraph{\textbf{VCF-like vs. ICGC-like Mutation Format}}~\\
+
+The table below highlights the differences between VCF-like mutation format and the mutation format used by RD-Connect (inherited from ICGC)
+
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{!{\color{DarkOrange}\vrule}l*{9}{!{\color{DarkOrange}\vrule}c}!{\color{DarkOrange}\vrule}}
+	\multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{Format}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutation type}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromosome start}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{chromosome end}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{reference genome allele}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{control genotype}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{sample genotype}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated from allele}}} & \multicolumn{1}{c}{\cellcolor{DarkOrange}\textcolor{white}{\textbf{mutated to allele}}} \\
+	VCF-like & \multirow{2}{*}{deletion} & 49510010 & 49510012 & TGA & TGA/TGA & TGA/T & & \\
+	ICGC Format & & 49510011 & 49510012 & GA & GA/GA & GA/- & GA & - \\ \arrayrulecolor{DarkOrange}\hline
+	VCF-like & \multirow{2}{*}{insertion} & 115303927 & 115303927 & A & A/A & A/AT & & \\
+	ICGC Format & & 115303927 & 115303927 & - & -/- & -/T & - & T \\ \arrayrulecolor{DarkOrange}\hline
+	VCF-like & \multirow{2}{*}{multiple-base substitution} & 39884779 & 39884787 & ACTCAGACC & ACTCAGACC/ACTCAGACC & ACTCAGACC/TTGT & & \\
+	ICGC Format & & 39884779 & 39884787 & ACTCAGACC & ACTCAGACC/ACTCAGACC & ACTCAGACC/TTGT & ACTCAGACC & TTGT \\ \arrayrulecolor{DarkOrange}\hline
+\end{tabular}
+\end{adjustbox}
