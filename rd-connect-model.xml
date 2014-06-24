@@ -306,16 +306,19 @@
     
     <pattern-declarations>
         <pattern name="ISODATE" match="[1-9][0-9][0-9][0-9]((1[0-2])|(0[1-9]))(([0-2][0-9])|(3[0-1]))"/>
+    	<pattern name="ALLELEPAT" match="-|[ATCG]+"/>
     </pattern-declarations>
     
     <compound-types>
         <compound-type name="name-url-ctype">
             <column name="name">
+            	<description>The algorithm name</description>
                 <column-type item-type="string" column-kind="required"/>
             </column>
             <sep>;</sep>
             <column name="url">
-                <column-type item-type="string" column-kind="required"/>
+            	<description>The URL which describes it</description>
+            	<column-type item-type="string" column-kind="required"/>
             </column>
         </compound-type>
     </compound-types>
@@ -358,14 +361,17 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
+                        	<description>The name of the feature</description>
                             <column-type item-type="string" column-kind="required" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
+                        	<description>The measure associated to the feature</description>
                             <column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
+                        	<description>The units of the measure</description>
                             <column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
@@ -380,10 +386,12 @@
                 <column-type item-type="compound" column-kind="optional">
                     <compound-type>
                         <column name="accession">
+                        	<description>Raw data accession number</description>
                             <column-type item-type="string" column-kind="required" />
                         </column>
                         <sep>;</sep>
                         <column name="url">
+                        	<description>Public entry of the raw data</description>
                             <column-type item-type="string" column-kind="required" />
                         </column>
                     </compound-type>
@@ -450,10 +458,12 @@
                     <compound-type>
                         <!-- TODO: Restrict program and version, so they cannot contain : or ; -->
                         <column name="program">
+                        	<description>The pipeline or program name</description>
                             <column-type item-type="string" column-kind="required"></column-type>
                         </column>
                         <sep>:</sep>
                         <column name="version">
+                        	<description>The used version or release</description>
                             <column-type item-type="string" column-kind="required"></column-type>
                         </column>
                     </compound-type>
@@ -590,6 +600,34 @@
                         <column-type item-type="decimal" column-kind="optional" />
                     </column>
                     <subtypes>
+                    	<concept-type name="validating-expression-experiment-primary">
+                    		<column name="biological_validation">
+                    			<description>Was there some kind of biological validation?</description>
+                    			<annotation key="ordering">
+                    				<ordering-hints><block>bottom</block></ordering-hints>
+                    			</annotation>
+                    			<column-type item-type="compound" column-kind="optional">
+                    				<compound-type>
+                    					<column name="status">
+                    						<description>Indicate if the mutation/variation has been observed in a larger cohort/sample size, and is not an artifact or consequence of sample selection for sequencing</description>
+                    						<annotation key="ordering">
+                    							<ordering-hints><block>bottom</block></ordering-hints>
+                    						</annotation>
+                    						<column-type item-type="integer" column-kind="required" cv="validationStatus" />
+                    					</column>
+                    					<sep>:</sep>
+                    					<column name="platform">
+                    						<description>Identifier of assay platform or technology used to validate the mutation/variant</description>
+                    						<annotation key="ordering">
+                    							<ordering-hints><block>bottom</block></ordering-hints>
+                    						</annotation>
+                    						<column-type item-type="integer" column-kind="optional" cv="B5"></column-type>
+                    					</column>
+                    				</compound-type>
+                    			</column-type>
+                    		</column>
+                    		
+                    	</concept-type>
                         <concept-type name="gene-expression-experiment-primary">
                             <column name="normalized_read_count">
                                 <description>Normalized count of sequencing reads if analyzed by sequencing platforms</description>
@@ -643,10 +681,12 @@
                 <column-type item-type="compound" column-kind="optional" array-seps=";">
                     <compound-type>
                         <column name="rank">
+                        	<description>Ranking criteria</description>
                             <column-type item-type="string" column-kind="required"></column-type>
                         </column>
                         <sep>:</sep>
                         <column name="value">
+                        	<description>Value calculated using the ranking criteria</description>
                             <column-type item-type="decimal" column-kind="required"></column-type>
                         </column>
                     </compound-type>
@@ -998,6 +1038,7 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
+                        	<description>The feature name</description>
                             <column-type item-type="string" column-kind="required">
                                 <cv>
                                     <e v="DNASE_PROTOCOL">Protocol used for DNAse treatment</e>
@@ -1006,10 +1047,12 @@
                         </column>
                         <sep>=</sep>
                         <column name="value">
+                        	<description>The value assigned to this feature</description>
                             <column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
+                        	<description>The units of the value assigned to this feature</description>
                             <column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
@@ -1041,15 +1084,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="wgbsFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="wgbsFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1080,15 +1126,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="medipFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="medipFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1119,15 +1168,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="mreFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="mreFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1158,15 +1210,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="csiFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="csiFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1195,15 +1250,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="csFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="csFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1234,15 +1292,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="mrnaFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="mrnaFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1273,15 +1334,18 @@
                 <column-type item-type="compound" column-kind="required" array-seps=";">
                     <compound-type>
                         <column name="feature">
-                            <column-type item-type="string" column-kind="required" cv="smrnaFeatures" />
+                        	<description>The feature name</description>
+                        	<column-type item-type="string" column-kind="required" cv="smrnaFeatures" />
                         </column>
                         <sep>=</sep>
                         <column name="value">
-                            <column-type item-type="text" column-kind="required" />
+                        	<description>The value assigned to this feature</description>
+                        	<column-type item-type="text" column-kind="required" />
                         </column>
                         <sep>*</sep>
                         <column name="units">
-                            <column-type item-type="string" column-kind="desirable" />
+                        	<description>The units of the value assigned to this feature</description>
+                        	<column-type item-type="string" column-kind="desirable" />
                         </column>
                     </compound-type>
                 </column-type>
@@ -1338,7 +1402,89 @@
             <related-to concept="ComparativeBasedAnalysisMetadata" prefix="base_" arity="M" partial-participation="true" inheritable="true"/>
         </concept>
     </concept-domain>
-    
+	
+	<concept-domain domain="ssm" fullname="Simple Somatic Mutations" filename-format="rd-connect-dcc">
+		<annotation key="defaultColor"><color>#7FF455</color></annotation>
+		<concept name="m" fullname="Simple Somatic Mutations - Metadata File">
+			<extends concept="AnalysisMetadata" domain="abstract"/>
+			
+			<description>Simple Somatic Mutations [ssm] – Metadata File [m]</description>
+			<annotation key="altname">Simple Somatic Mutations Metadata</annotation>
+			
+			<weak-concepts>
+				<concept name="p" fullname="Simple Somatic Mutations - Primary Analysis File">
+					<base-concept-type name="abstract-coordinate-range"/>
+					<base-concept-type name="abstract-strand"/>
+					<base-concept-type name="validating-expression-experiment-primary"/>
+					
+					<description>Simple Somatic Mutations [ssm] – Primary Analysis File [p]</description>
+					
+					<column name="mutation_type">
+						<description>Type of mutation</description>
+						<column-type item-type="string" column-kind="required">
+							<cv>
+								<e v="I">Insertion</e>
+								<e v="D">Deletion</e>
+								<e v="S">Single-base substitution</e>
+								<e v="M">Multiple-base substitution</e>
+							</cv>
+						</column-type>
+					</column>
+					
+					<column name="reference_genome_allele">
+						<description>Allele in the reference genome. For insertions, use a dash. For all other types of mutations, use forward strand DNA sequence at the reference genome position as specified in chromosome, <xhtml:b><xhtml:tt>chromosome_start</xhtml:tt></xhtml:b> and <xhtml:b><xhtml:tt>chromosome_end</xhtml:tt></xhtml:b></description>
+						<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
+					</column>
+					
+					<column name="expressed_allele">
+						<description>For heterozygous SNPs, the dominant allele as revealed by RNA-seq in the donor sample. When multiple alleles are identified, up to four alleles can be specified, each separated by a comma (no whitespace allowed)</description>
+						<column-type item-type="string" column-kind="required"/>
+					</column>
+					
+					<column name="control_genotype">
+						<description>Genotype of the control sample. Use a dash for a missing allele.</description>
+						<column-type item-type="string" column-kind="required"/>
+					</column>
+					
+					<column name="sample_genotype">
+						<description>Genotype of the donor sample. Use a dash for each missing base</description>
+						<column-type item-type="string" column-kind="required"/>
+					</column>
+					
+					<column name="mutated_from_allele">
+						<description>Allele that is believed to be the original allele in the ancestral cell that was mutated in the donor cell. Use dash for insertions. Mutated allele must be one of the two alleles in the <xhtml:b><xhtml:tt>control_genotype</xhtml:tt></xhtml:b></description>
+						<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
+					</column>
+					
+					<column name="mutated_to_allele">
+						<description>The new allele identified in the donor sample that is believed to be the resulting allele of a somatic mutation event. Use dash for deletions. Mutant allele must be one allele and must be one of the alleles defined in <xhtml:b><xhtml:tt>sample_genotype</xhtml:tt></xhtml:b></description>
+						<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
+					</column>
+					
+					<column name="total_read_count">
+						<description>Total number of raw reads that cover the called mutation</description>
+						<column-type item-type="integer" column-kind="required"/>
+					</column>
+					
+					<column name="mutant_allele_read_count">
+						<description>Total number of raw reads that contain the mutant allele</description>
+						<column-type item-type="integer" column-kind="required"/>
+					</column>
+					
+					<!-- Columns verification_status and verification_platform have not been transferred from ICGC  -->
+					
+				</concept>
+			</weak-concepts>
+			
+			<related-to concept="mrna" domain="lab" id="exp-rel">
+				<annotation key="ordering">
+					<ordering-hints>
+						<block>top</block>
+					</ordering-hints>
+				</annotation>
+			</related-to>
+		</concept>
+	</concept-domain>
     
     <!--
     <concept-domain domain="cngv" fullname="Copy Number Germline Variations" filename-format="rd-connect-dcc">
