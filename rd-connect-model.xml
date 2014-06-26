@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dcc-schema
         project="RD-Connect"
-        schemaVer="0.1"
+        schemaVer="0.1.2"
         
         xmlns="http://www.blueprint-epigenome.eu/dcc/schema"
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
@@ -1411,6 +1411,7 @@
 			<description>Simple Somatic Mutations [ssm] – Metadata File [m]</description>
 			<annotation key="altname">Simple Somatic Mutations Metadata</annotation>
 			
+			<!--
 			<weak-concepts>
 				<concept name="p" fullname="Simple Somatic Mutations - Primary Analysis File">
 					<base-concept-type name="abstract-coordinate-range"/>
@@ -1471,10 +1472,11 @@
 						<column-type item-type="integer" column-kind="required"/>
 					</column>
 					
-					<!-- Columns verification_status and verification_platform have not been transferred from ICGC  -->
+					<!- - Columns verification_status and verification_platform have not been transferred from ICGC  - ->
 					
 				</concept>
 			</weak-concepts>
+			-->
 			
 			<related-to concept="mrna" domain="lab" id="exp-rel">
 				<annotation key="ordering">
@@ -1483,6 +1485,177 @@
 					</ordering-hints>
 				</annotation>
 			</related-to>
+		</concept>
+		
+		<concept name="p" fullname="Simple Somatic Mutations - Primary Analysis File">
+			<base-concept-type name="abstract-coordinate-range"/>
+			<base-concept-type name="abstract-strand"/>
+			<base-concept-type name="abstract-experiment-primary"/>
+			
+			<description>Simple Somatic Mutations [ssm] – Primary Analysis File [p]</description>
+			
+			<column name="data">
+				<description>The data from the pipeline associated to each one of the samples which share the same chromosomal coordinates and mutation</description>
+				<column-type item-type="compound" column-kind="required" array-seps="|">
+					<compound-type>
+						<column name="analysis_id">
+							<description>Unique identifier for the analysis performed for a particular set of samples</description>
+							<annotation key="ordering">
+								<ordering-hints><block>top</block></ordering-hints>
+							</annotation>
+							<column-type item-type="string" column-kind="idref" />
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="analyzed_sample_id">
+							<description><xhtml:i>Unique identifier</xhtml:i> for the analyzed sample assigned by data provider</description>
+							<column-type item-type="string" column-kind="required"/>
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="total_read_count">
+							<description>Total number of raw reads that cover the called mutation</description>
+							<column-type item-type="integer" column-kind="required"/>
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="mutant_allele_read_count">
+							<description>Total number of raw reads that contain the mutant allele</description>
+							<column-type item-type="integer" column-kind="desirable"/>
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="quality_score">
+							<description>Average quality score for the mutation/variation call</description>
+							<column-type item-type="decimal" column-kind="optional"></column-type>
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="probability">
+							<description>Probability of the mutation/variation call</description>
+							<column-type item-type="decimal" column-kind="optional" />
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="sample_mut_info">
+							<description>Mutation information specific for this sample (i.e. fields gathered from VCF column INFO)</description>
+							<column-type item-type="compound" column-kind="required" array-seps=";">
+								<compound-type>
+									<column name="key">
+										<column-type item-type="string" column-kind="required"></column-type>
+									</column>
+									<sep>=</sep>
+									<column name="value">
+										<column-type item-type="text" column-kind="required" array-seps=","></column-type>
+									</column>
+								</compound-type>
+								
+							</column-type>
+						</column>
+						
+						<sep>;</sep>
+						
+						<column name="mutData">
+							<description>Mutation information (i.e. fields gathered from VCF column FORMAT and sample columns)</description>
+							<column-type item-type="compound" column-kind="required" array-seps=":">
+								<compound-type>
+									<column name="key">
+										<column-type item-type="string" column-kind="required"/>
+									</column>
+									<sep>=</sep>
+									<column name="value">
+										<column-type item-type="text" column-kind="required" array-seps=","/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						
+					</compound-type>
+					
+					<!-- Columns verification_status and verification_platform have not been transferred from ICGC  -->
+				</column-type>
+			</column>
+			
+			<column name="mutation_type">
+				<description>Type of mutation</description>
+				<column-type item-type="string" column-kind="required">
+					<cv>
+						<e v="I">Insertion</e>
+						<e v="D">Deletion</e>
+						<e v="S">Single-base substitution</e>
+						<e v="M">Multiple-base substitution</e>
+					</cv>
+				</column-type>
+			</column>
+			
+			<column name="mutation_ident">
+				<description>Information which backs up the identification of the mutation (i.e. from column IDENT from VCF)</description>
+				<column-type item-type="compound" column-kind="optional">
+					<compound-type>
+						<column name="RScode">
+							<description>RS code from dbSNP which identifies this mutation</description>
+							<column-type item-type="string" column-kind="required"/>
+						</column>
+						<sep>;</sep>
+						<column name="dbSNPBuildID">
+							<description>The dbSNP Build ID for this RScode</description>
+							<column-type item-type="string" column-kind="required"/>
+						</column>
+						<sep>;</sep>
+						<column name="other">
+							<column-type item-type="compound" column-kind="required" array-seps=";">
+								<compound-type>
+									<column name="key">
+										<column-type item-type="string" column-kind="required"/>
+									</column>
+									<sep>;</sep>
+									<column name="value">
+										<column-type item-type="string" column-kind="required"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+					</compound-type>
+				</column-type>
+			</column>
+			
+			
+			<column name="reference_genome_allele">
+				<description>Allele in the reference genome. For insertions, use a dash. For all other types of mutations, use forward strand DNA sequence at the reference genome position as specified in chromosome, <xhtml:b><xhtml:tt>chromosome_start</xhtml:tt></xhtml:b> and <xhtml:b><xhtml:tt>chromosome_end</xhtml:tt></xhtml:b></description>
+				<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
+			</column>
+			
+			<column name="expressed_allele">
+				<description>For heterozygous SNPs, the dominant allele as revealed by RNA-seq in the donor sample. When multiple alleles are identified, up to four alleles can be specified, each separated by a comma (no whitespace allowed)</description>
+				<column-type item-type="string" column-kind="required" array-seps=","/>
+			</column>
+			
+			<column name="control_genotype">
+				<description>Genotype of the control sample. Use a dash for a missing allele.</description>
+				<column-type item-type="string" column-kind="required"/>
+			</column>
+			
+			<column name="sample_genotype">
+				<description>Genotype of the donor sample. Use a dash for each missing base</description>
+				<column-type item-type="string" column-kind="required"/>
+			</column>
+			
+			<column name="mutated_from_allele">
+				<description>Allele that is believed to be the original allele in the ancestral cell that was mutated in the donor cell. Use dash for insertions. Mutated allele must be one of the two alleles in the <xhtml:b><xhtml:tt>control_genotype</xhtml:tt></xhtml:b></description>
+				<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
+			</column>
+			
+			<column name="mutated_to_allele">
+				<description>The new allele identified in the donor sample that is believed to be the resulting allele of a somatic mutation event. Use dash for deletions. Mutant allele must be one allele and must be one of the alleles defined in <xhtml:b><xhtml:tt>sample_genotype</xhtml:tt></xhtml:b></description>
+				<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
+			</column>
+			
 		</concept>
 	</concept-domain>
     
