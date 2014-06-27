@@ -14,6 +14,7 @@ use File::Spec;
 use Sys::CPU;
 
 use BP::Model;
+use BP::Loader::CorrelatableConcept;
 use BP::Loader::Mapper;
 use BP::Loader::Mapper::Elasticsearch;
 
@@ -24,7 +25,7 @@ use JSON;
 use constant {
 	GZIP	=>	'pigz',
 	GUNZIP	=>	'unpigz',
-	BATCHSIZE	=>	200,
+	UPDATESIZE	=>	1000,
 };
 
 my %IDENTfields = (
@@ -77,7 +78,6 @@ if(scalar(@ARGV)>=2) {
 				push(@loadModels,$loadModelName);
 			}
 		}
-		
 		# Now, do we need to push the metadata there?
 		if(!$ini->exists($BP::Loader::Mapper::SECTION,'metadata-loaders') || $ini->val($BP::Loader::Mapper::SECTION,'metadata-loaders') eq 'true') {
 			foreach my $mapper (@storageModels{@loadModels}) {
@@ -89,15 +89,11 @@ if(scalar(@ARGV)>=2) {
 		my $mapper = $storageModels{'elasticsearch'};
 
 		my $concept = $model->getConceptDomain('ssm')->conceptHash->{'p'};
+		my $corrConcept = BP::Loader::CorrelatableConcept->new($concept);
 		
-		#my $destination = $mapper->getDestination($concept);
+		$mapper->setDestination($corrConcept);
 		
-		# Three hacks in a row ... Shame on me!
-		my $es = $mapper->connect();
-		my $bes = $es->bulk_helper(
-			index   => 'primary',
-			type    => 'ssm.p'
-		);
+		my $bes = $mapper->getInternalDestination();
 		
 		my @sortedFiles = ();
 		my $numsorted = 0;
@@ -157,8 +153,8 @@ if(scalar(@ARGV)>=2) {
 		}
 		
 		# And now, coordinate all of them to push the data!!!!!!
-		print STDERR "Bulk insert starts (in batches of ",BATCHSIZE,")\n";
-		my @bulkEntries = ();
+		print STDERR "Bulk insert starts (in updates of ",UPDATESIZE,")\n";
+		# my @bulkEntries = ();
 		my $nBulk = 0;
 		my $totalBulk = 0;
 		while(scalar(@joiningFiles)>0) {
@@ -325,14 +321,13 @@ if(scalar(@ARGV)>=2) {
 			
 			# Pushing the compound entry to Elasticsearch
 			#print $j->encode(\%entry),"\n";
-			push(@bulkEntries,\%entry);
+			# push(@bulkEntries,\%entry);
 			$bes->index({source=>\%entry});
 			$nBulk ++;
-			if($nBulk >= BATCHSIZE) {
+			if($nBulk >= UPDATESIZE) {
 				$totalBulk += $nBulk;
-				#$mapper->bulkInsert($destination,\@bulkEntries);
-				$bes->flush();
-				@bulkEntries = ();
+				# $mapper->bulkInsert($destination,\@bulkEntries);
+				# @bulkEntries = ();
 				$nBulk = 0;
 				print STDERR "INFO: Inserted $totalBulk entries...\n";
 			}
@@ -340,10 +335,9 @@ if(scalar(@ARGV)>=2) {
 			# Next round!
 			@joiningFiles = @leftFiles;
 		}
-		if($nBulk > 0) {
-			$totalBulk += $nBulk;
+		if($totalBulk > 0) {
 			#$mapper->bulkInsert($destination,\@bulkEntries);
-			$bes->flush();
+			$mapper->freeDestination();
 			print STDERR "INFO: Inserted $totalBulk entries...\n";
 		}
 	}
