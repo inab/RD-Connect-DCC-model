@@ -28,6 +28,28 @@ use constant {
 	UPDATESIZE	=>	1000,
 };
 
+sub compareVCFlines($$);
+sub compareVCFcols($$);
+
+sub compareVCFlines($$) {
+	my($nleft,$nright)=@_;
+	
+	return compareVCFcols($nleft->[4],$nright->[4]);
+}
+
+sub compareVCFcols($$) {
+	my($left,$right)=@_;
+	
+	if($left ~~ $right) {
+		return 0;
+	} elsif($left->[0] lt $right->[0] || ($left->[0] eq $right->[0] && ($left->[1] < $right->[1] || ($left->[1] == $right->[1] && ($left->[2] lt $right->[2] || ($left->[2] eq $right->[2] && $left->[3] lt $right->[3])))))) {
+		# It's over!!!!!
+		return -1;
+	} else {
+		return 1;
+	}
+}
+
 my %IDENTfields = (
 	'RS'	=>	'RScode',
 	'dbSNPBuildID'	=>	'dbSNPBuildID'
@@ -152,35 +174,22 @@ if(scalar(@ARGV)>=2) {
 			}
 		}
 		
+		@joiningFiles = sort(compareVCFlines @joiningFiles);
+		
 		# And now, coordinate all of them to push the data!!!!!!
 		print STDERR "Bulk insert starts (in updates of ",UPDATESIZE,")\n";
 		# my @bulkEntries = ();
 		my $nBulk = 0;
 		my $totalBulk = 0;
-		while(scalar(@joiningFiles)>0) {
+		my $hasOneFile = scalar(@joiningFiles)>0;
+		my $hasManyFiles = scalar(@joiningFiles)>1;
+		while($hasOneFile) {
 			# Choose the least value from the candidates
-			my @chosenFiles = ();
-			my @leftFiles = ();
-			my $reprvalues = undef;
-			my $colvalrepr = undef;
-			
-			foreach my $joining (@joiningFiles) {
-				if(defined($colvalrepr) && $colvalrepr ~~ $joining->[4]) {
-					push(@chosenFiles,$joining);
-				} elsif(defined($colvalrepr) && ($colvalrepr->[0] lt $joining->[4][0] || ($colvalrepr->[0] eq $joining->[4][0] && ($colvalrepr->[1] < $joining->[4][1] || ($colvalrepr->[1] == $joining->[4][1] && ($colvalrepr->[2] lt $joining->[4][2] || ($colvalrepr->[2] eq $joining->[4][2] && $colvalrepr->[3] lt $joining->[4][3]))))))) {
-					# It's over!!!!!
-					push(@leftFiles,$joining);
-				} else {
-					push(@leftFiles,@chosenFiles);
-					$reprvalues = $joining->[3];
-					$colvalrepr = $joining->[4];
-					@chosenFiles = ($joining);
-				}
-			}
+			my $reprvalues = $joiningFiles[0]->[3];
 			
 			# Process the winners
 			# unlinking from the original value
-			$colvalrepr = [@{$colvalrepr}];
+			my $colvalrepr = [@{$joiningFiles[0]->[4]}];
 			
 			# The data entry
 			my $mutation_type=undef;
@@ -252,7 +261,13 @@ if(scalar(@ARGV)>=2) {
 				$entry{'mutation_ident'} = \%mutationIdent
 			}
 			
-			foreach my $chosen (@chosenFiles) {
+			my $equalPos = 0;
+			my @leftFiles = ();
+			my $erased = undef;
+			foreach my $chosen (@joiningFiles) {
+				last  unless($chosen->[4] ~~ $colvalrepr);
+				$equalPos++;
+				
 				do {
 					my $tabvalues = $chosen->[3];
 					
@@ -316,7 +331,11 @@ if(scalar(@ARGV)>=2) {
 				} while(defined($chosen->[2]) && $colvalrepr ~~ $chosen->[4]);
 				
 				# Save for next round, but only if it can give us more data!
-				push(@leftFiles,$chosen)  if(defined($chosen->[2]));
+				if(defined($chosen->[2])) {
+					push(@leftFiles,$chosen);
+				} else {
+					$erased = 1;
+				}
 			}
 			
 			# Pushing the compound entry to Elasticsearch
@@ -333,10 +352,21 @@ if(scalar(@ARGV)>=2) {
 			}
 			
 			# Next round!
-			@joiningFiles = @leftFiles;
+			if($hasManyFiles) {
+				unless($erased) {
+					@joiningFiles = sort compareVCFlines @joiningFiles;
+				} else {
+					@joiningFiles = sort compareVCFlines (@joiningFiles[$equalPos..$#joiningFiles],@leftFiles);
+					$hasOneFile = scalar(@joiningFiles)>0;
+					$hasManyFiles = scalar(@joiningFiles)>1;
+				}
+			} elsif($erased) {
+				$hasOneFile = undef;
+			}
 		}
-		if($totalBulk > 0) {
+		if($totalBulk > 0 || $nBulk > 0) {
 			#$mapper->bulkInsert($destination,\@bulkEntries);
+			$totalBulk += $nBulk;
 			$mapper->freeDestination();
 			print STDERR "INFO: Inserted $totalBulk entries...\n";
 		}
