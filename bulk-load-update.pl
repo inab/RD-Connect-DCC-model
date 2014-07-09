@@ -196,11 +196,14 @@ if(scalar(@ARGV)>=2) {
 		
 		# And now, coordinate all of them to push the data!!!!!!
 		print STDERR "Bulk upsert starts (in updates of ",UPDATESIZE,")\n";
+		
 		# my @bulkEntries = ();
 		my $nBulk = 0;
 		my $totalBulk = 0;
 		my $hasOneFile = scalar(@joiningFiles)>0;
 		my $hasManyFiles = scalar(@joiningFiles)>1;
+		my $numIns = 0;
+		my $numUpd = 0;
 		while($hasOneFile) {
 			# Choose the least value from the candidates
 			my $reprvalues = $joiningFiles[0]->[3];
@@ -373,7 +376,6 @@ if(scalar(@ARGV)>=2) {
 			# Pushing the compound entry to Elasticsearch
 			my $bulkDef = undef;
 			if(defined($EXISTING) && $p_existingCols ~~ $colvalrepr) {
-				print STDERR "Upsert!: $existingId\n";
 				$bes->update({
 					id => $existingId,
 					script => 'ctx._source.data += newdoc',
@@ -381,20 +383,22 @@ if(scalar(@ARGV)>=2) {
 						newdoc => \@mutationData
 					}
 				});
+				$numUpd++;
 			} else {
 				#print $j->encode(\%entry),"\n";
 				# push(@bulkEntries,\%entry);
 				$bes->index({source=>\%entry});
+				$numIns++;
 			}
 			
 			$nBulk ++;
-			if($nBulk >= UPDATESIZE) {
-				$totalBulk += $nBulk;
-				# $mapper->bulkInsert($destination,\@bulkEntries);
-				# @bulkEntries = ();
-				$nBulk = 0;
-				print STDERR "INFO: Upserted $totalBulk entries...\n";
-			}
+			#if($nBulk >= UPDATESIZE) {
+			#	$totalBulk += $nBulk;
+			#	# $mapper->bulkInsert($destination,\@bulkEntries);
+			#	# @bulkEntries = ();
+			#	$nBulk = 0;
+			#	print STDERR "INFO: Upserted $totalBulk entries...\n";
+			#}
 			
 			# Next round!
 			if($hasManyFiles) {
@@ -413,7 +417,7 @@ if(scalar(@ARGV)>=2) {
 			#$mapper->bulkInsert($destination,\@bulkEntries);
 			$totalBulk += $nBulk;
 			$mapper->freeDestination();
-			print STDERR "INFO: Upserted $totalBulk entries...\n";
+			print STDERR "INFO: Upserted $totalBulk entries ($numIns insertions, $numUpd updates)...\n";
 		}
 	}
 }
