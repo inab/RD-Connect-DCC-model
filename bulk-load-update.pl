@@ -378,6 +378,7 @@ if(scalar(@ARGV)>=2) {
 			if(defined($EXISTING) && $p_existingCols ~~ $colvalrepr) {
 				$bes->update({
 					id => $existingId,
+					lang => 'mvel',
 					script => 'ctx._source.data += newdoc',
 					params => {
 						newdoc => \@mutationData
