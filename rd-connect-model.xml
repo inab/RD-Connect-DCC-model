@@ -1550,7 +1550,7 @@
 						
 						<sep>;</sep>
 						
-						<column name="mutData">
+						<column name="mut_data">
 							<description>Mutation information (i.e. fields gathered from VCF column FORMAT and sample columns)</description>
 							<column-type item-type="compound" column-kind="required" container-type="hash" array-seps=":" />
 						</column>
@@ -1587,17 +1587,7 @@
 						</column>
 						<sep>;</sep>
 						<column name="other">
-							<column-type item-type="compound" column-kind="required" array-seps=";">
-								<compound-type>
-									<column name="key">
-										<column-type item-type="string" column-kind="required"/>
-									</column>
-									<sep>;</sep>
-									<column name="value">
-										<column-type item-type="string" column-kind="required"/>
-									</column>
-								</compound-type>
-							</column-type>
+							<column-type item-type="string" column-kind="required" container-type="hash" hash-key-sep="=" hash-value-sep=";"/>
 						</column>
 					</compound-type>
 				</column-type>

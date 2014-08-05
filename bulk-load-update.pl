@@ -257,7 +257,7 @@ if(scalar(@ARGV)>=2) {
 			# The identified mutation
 			if($reprvalues->[2] ne '.') {
 				my %mutationIdent =(
-					'other'	=> [],
+					'other'	=> {},
 				);
 				
 				foreach my $keyval (split(/;/,$reprvalues->[2])) {
@@ -276,7 +276,7 @@ if(scalar(@ARGV)>=2) {
 					if(exists($IDENTfields{$key})) {
 						$mutationIdent{$IDENTfields{$key}} = $p_data;
 					} else {
-						push(@{$mutationIdent{'other'}},{'key'=>$key,'value'=>$p_data});
+						$mutationIdent{'other'}{$key} = $p_data;
 					}
 				}
 				$entry{'mutation_ident'} = \%mutationIdent
@@ -294,7 +294,7 @@ if(scalar(@ARGV)>=2) {
 					
 					my @sampleFields = split(/:/,$tabvalues->[8]);
 					# Consolidating the entry
-					my @sampleMutInfo = ();
+					my %sampleMutInfo = ();
 					my $total_read_count = -1;
 					my $mutant_allele_read_count = undef;
 					
@@ -311,7 +311,7 @@ if(scalar(@ARGV)>=2) {
 						} else {
 							$key = $keyval;
 						}
-						push(@sampleMutInfo,{'key'=>$key,'value'=>$p_data});
+						$sampleMutInfo{$key} = $p_data;
 						if($key eq 'DP') {
 							$total_read_count = $value;
 						} elsif($key eq 'IS') {
@@ -322,14 +322,14 @@ if(scalar(@ARGV)>=2) {
 					my $samplePos = 9;
 					foreach my $sample (@{$chosen->[1]}) {
 						my @sampleValues = split(/:/,$tabvalues->[$samplePos]);
-						my @sampleMutData = map { {'key' => $sampleFields[$_], 'value' => $sampleValues[$_] } } (0..$#sampleFields);
+						my %sampleMutData = map { $sampleFields[$_] => $sampleValues[$_] } (0..$#sampleFields);
 						my %dataEntry = (
 							'analysis_id'	=> $sample,
 							'analyzed_sample_id'	=> $sample,
 							'total_read_count'	=> $total_read_count,
 							'quality_score'	=> $tabvalues->[5],
-							'sample_mut_info'	=> \@sampleMutInfo,
-							'mut_data'	=> \@sampleMutData
+							'sample_mut_info'	=> \%sampleMutInfo,
+							'mut_data'	=> \%sampleMutData
 						);
 						$dataEntry{'mutant_allele_read_count'} = $mutant_allele_read_count  if(defined($mutant_allele_read_count));
 						
