@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dcc-schema
         project="RD-Connect"
-        schemaVer="0.1.2"
+        schemaVer="0.1.3"
         
         xmlns="http://www.blueprint-epigenome.eu/dcc/schema"
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
@@ -1545,37 +1545,15 @@
 						
 						<column name="sample_mut_info">
 							<description>Mutation information specific for this sample (i.e. fields gathered from VCF column INFO)</description>
-							<column-type item-type="compound" column-kind="required" array-seps=";">
-								<compound-type>
-									<column name="key">
-										<column-type item-type="string" column-kind="required"></column-type>
-									</column>
-									<sep>=</sep>
-									<column name="value">
-										<column-type item-type="text" column-kind="required" array-seps=","></column-type>
-									</column>
-								</compound-type>
-								
-							</column-type>
+							<column-type item-type="text" column-kind="required" container-type="hash" hash-key-sep="=" hash-value-sep=";" array-seps="," />
 						</column>
 						
 						<sep>;</sep>
 						
 						<column name="mutData">
 							<description>Mutation information (i.e. fields gathered from VCF column FORMAT and sample columns)</description>
-							<column-type item-type="compound" column-kind="required" array-seps=":">
-								<compound-type>
-									<column name="key">
-										<column-type item-type="string" column-kind="required"/>
-									</column>
-									<sep>=</sep>
-									<column name="value">
-										<column-type item-type="text" column-kind="required" array-seps=","/>
-									</column>
-								</compound-type>
-							</column-type>
+							<column-type item-type="compound" column-kind="required" container-type="hash" array-seps=":" />
 						</column>
-						
 					</compound-type>
 					
 					<!-- Columns verification_status and verification_platform have not been transferred from ICGC  -->
