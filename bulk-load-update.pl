@@ -110,7 +110,7 @@ if(scalar(@ARGV)>=2) {
 		
 		$mapper->setDestination($corrConcept);
 		
-		my $bes = $mapper->getInternalDestination();
+		my $destination = $mapper->getInternalDestination();
 		
 		my @sortedFiles = ();
 		my $numsorted = 1;
@@ -373,22 +373,26 @@ if(scalar(@ARGV)>=2) {
 				}
 			}
 			
+			# Validation and default values filling
+			my $entorp = $mapper->validateAndEnactEntry(\%entry);
+			
 			# Pushing the compound entry to Elasticsearch
 			my $bulkDef = undef;
 			if(defined($EXISTING) && $p_existingCols ~~ $colvalrepr) {
-				$bes->update({
-					id => $existingId,
-					lang => 'mvel',
-					script => 'ctx._source.data += newdoc',
-					params => {
-						newdoc => \@mutationData
-					}
-				});
+				#$bes->update({
+				#	id => $existingId,
+				#	lang => 'mvel',
+				#	script => 'ctx._source.data += newdoc',
+				#	params => {
+				#		newdoc => \@mutationData
+				#	}
+				#});
+				$mapper->_incrementalUpdate($existingId,['data',\@mutationData]);
 				$numUpd++;
 			} else {
 				#print $j->encode(\%entry),"\n";
 				# push(@bulkEntries,\%entry);
-				$bes->index({source=>\%entry});
+				$mapper->_bulkInsert($destination,$entorp);
 				$numIns++;
 			}
 			
