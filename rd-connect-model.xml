@@ -1494,6 +1494,21 @@
 			
 			<description>Simple Somatic Mutations [ssm] – Primary Analysis File [p]</description>
 			
+			<annotation key="grouping-hint">
+				<grouping-hints>
+					<grouping-columns>
+						<column>chromosome</column>
+						<column>chromosome_start</column>
+						<column>mutated_from_allele</column>
+						<column>mutated_to_allele</column>
+					</grouping-columns>
+					<incremental-columns>
+						<column>data</column>
+					</incremental-columns>
+				</grouping-hints>
+				
+			</annotation>
+			
 			<column name="data">
 				<description>The data from the pipeline associated to each one of the samples which share the same chromosomal coordinates and mutation</description>
 				<column-type item-type="compound" column-kind="required" container-type="array" array-seps="|">

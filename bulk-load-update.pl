@@ -104,7 +104,7 @@ if(scalar(@ARGV)>=2) {
 		
 		# Two hacks in a row... Yuck!
 		my $mapper = $storageModels{'elasticsearch'};
-
+		
 		my $concept = $model->getConceptDomain('ssm')->conceptHash->{'p'};
 		my $corrConcept = BP::Loader::CorrelatableConcept->new($concept);
 		
@@ -174,7 +174,7 @@ if(scalar(@ARGV)>=2) {
 		# Third, read all the existing id entries, and open the file
 		print STDERR "Fetching existing entry ids\n";
 		my $existingFile = File::Spec->catfile($workingDir,'000_existing.tab.gz');
-		my $numEntries = $mapper->existingEntries(['chromosome','chromosome_start','mutated_from_allele','mutated_to_allele'],$existingFile);
+		my $numEntries = $mapper->existingEntries($existingFile);
 		my $existingId = undef;
 		my @existingCols = ();
 		my $p_existingCols = \@existingCols;
@@ -373,12 +373,15 @@ if(scalar(@ARGV)>=2) {
 				}
 			}
 			
+			my $isUpdate = defined($EXISTING) && $p_existingCols ~~ $colvalrepr;
+			$entry{BP::Loader::Mapper::COL_INCREMENTAL_UPDATE_ID} = $existingId  if($isUpdate);
+			
 			# Validation and default values filling
 			my $entorp = $mapper->validateAndEnactEntry(\%entry);
 			
 			# Pushing the compound entry to Elasticsearch
-			my $bulkDef = undef;
-			if(defined($EXISTING) && $p_existingCols ~~ $colvalrepr) {
+			$mapper->_bulkInsert($destination,$entorp);
+			if($isUpdate) {
 				#$bes->update({
 				#	id => $existingId,
 				#	lang => 'mvel',
@@ -387,12 +390,11 @@ if(scalar(@ARGV)>=2) {
 				#		newdoc => \@mutationData
 				#	}
 				#});
-				$mapper->_incrementalUpdate($existingId,['data',\@mutationData]);
 				$numUpd++;
 			} else {
 				#print $j->encode(\%entry),"\n";
 				# push(@bulkEntries,\%entry);
-				$mapper->_bulkInsert($destination,$entorp);
+				#$mapper->_bulkInsert($destination,$entorp);
 				$numIns++;
 			}
 			
