@@ -1639,6 +1639,12 @@
 				<column-type item-type="string" column-kind="required" pattern="ALLELEPAT"/>
 			</column>
 			
+			<index unique="false">
+				<attr name="chromosome"/>
+				<attr name="chromosome_start"/>
+				<attr name="chromosome_end"/>
+			</index>
+			
 		</concept>
 	</concept-domain>
     
