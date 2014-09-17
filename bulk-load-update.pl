@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w
 
+use v5.12;
 use strict;
-
+use warnings qw(all);
+no warnings qw(experimental);
 use diagnostics;
 use FindBin;
 use lib $FindBin::Bin."/schema+tools/lib";
@@ -377,10 +379,8 @@ if(scalar(@ARGV)>=2) {
 			$entry{BP::Loader::Mapper::COL_INCREMENTAL_UPDATE_ID} = $existingId  if($isUpdate);
 			
 			# Validation and default values filling
-			my $entorp = $mapper->validateAndEnactEntry(\%entry);
-			
 			# Pushing the compound entry to Elasticsearch
-			$mapper->_bulkInsert($destination,$entorp);
+			$mapper->bulkInsert(\%entry);
 			if($isUpdate) {
 				#$bes->update({
 				#	id => $existingId,
