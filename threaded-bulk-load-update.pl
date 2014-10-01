@@ -5,6 +5,11 @@ use strict;
 use warnings qw(all);
 no warnings qw(experimental);
 use diagnostics -warntrace;
+
+use threads;
+use threads::shared;
+use Thread::Queue;
+
 use FindBin;
 use lib $FindBin::Bin."/schema+tools/lib";
 
@@ -19,6 +24,8 @@ use BP::Loader::CorrelatableConcept;
 use BP::Loader::Mapper;
 use BP::Loader::Mapper::Elasticsearch;
 use BP::Loader::Mapper::MongoDB;
+
+use constant MAX_WORKERS => 4;
 
 use constant {
 	VCF_SORTED_FILE	=>	0,
@@ -85,13 +92,14 @@ sub compareVCFcols($$) {
 	}
 }
 
-my $numsorted;
+# Shared by all the instances
+my $numsorted :shared;
 
-sub VCFsorter($@) {
-	my($workingDir,@VCFfiles)=@_;
+sub sortWorker($$) {
+	my($workingDir,$queue)=@_;
 	
 	my @sortedFiles = ();
-	foreach my $vcffile (@VCFfiles) {
+	while(defined(my $vcffile = $queue->dequeue())) {
 		# First, its sections from the report, with byte offsets
 		if(open(my $VCF,BP::Loader::CorrelatableConcept::GUNZIP.' -c '.$vcffile.' | grep -nF "#" |')) {
 			print STDERR "Reading header from $vcffile\n";
@@ -138,6 +146,7 @@ sub VCFsorter($@) {
 				# Now we can resave and sort the file by chromosome, coordinates and mutation
 				my $localnumsorted = undef;
 				{
+					lock($numsorted);
 					$localnumsorted = $numsorted;
 					$numsorted++;
 				}
@@ -222,7 +231,17 @@ if(scalar(@ARGV)>=2) {
 		my @sortedFiles = ();
 		$numsorted = 1;
 		# Let's pre-process the data files
-		@sortedFiles = VCFsorter($workingDir,@ARGV);
+		{
+			my $queue = Thread::Queue->new();
+			
+			my @workers = map { threads->create(\&sortWorker,$workingDir,$queue) } 1..MAX_WORKERS;
+			
+			$queue->enqueue(@ARGV);
+			$queue->end();
+			foreach my $worker (@workers) {
+				push(@sortedFiles,$worker->join());
+			}
+		}
 		
 		# Second pass, reopen all the files and read each first line
 		my @joiningFiles = @sortedFiles;
