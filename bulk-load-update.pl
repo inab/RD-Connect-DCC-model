@@ -194,7 +194,25 @@ if(scalar(@ARGV)>=2) {
 	my %storageModels = ();
 	
 	# Is there any file whose data has to be mapped?
-	if(scalar(@ARGV)>0) {
+	my @VCFfiles = ();
+	foreach my $VCFfile (@ARGV) {
+		if(-f $VCFfile) {
+			push(@VCFfiles,$VCFfile);
+		} elsif(-d $VCFfile) {
+			if(opendir(my $VD,$VCFfile)) {
+				while(my $entry = readdir($VD)) {
+					my $VCFentry = File::Spec->catfile($VCFfile,$entry);
+					push(@VCFfiles,$VCFentry)  if(-f $VCFentry && $entry =~ /\.gz/);
+				}
+				
+				closedir($VD);
+			}
+		} else {
+			print "Discarding $VCFfile as it does not exists\n";
+		}
+	}
+	
+	if(scalar(@VCFfiles) > 0) {
 		# Setting up the loader storage model(s)
 		Carp::croak('ERROR: undefined destination storage model')  unless($ini->exists($BP::Loader::Mapper::SECTION,'loaders'));
 		my $loadModelNames = $ini->val($BP::Loader::Mapper::SECTION,'loaders');
@@ -222,7 +240,7 @@ if(scalar(@ARGV)>=2) {
 		my @sortedFiles = ();
 		$numsorted = 1;
 		# Let's pre-process the data files
-		@sortedFiles = VCFsorter($workingDir,@ARGV);
+		@sortedFiles = VCFsorter($workingDir,@VCFfiles);
 		
 		# Second pass, reopen all the files and read each first line
 		my @joiningFiles = @sortedFiles;
@@ -238,8 +256,6 @@ if(scalar(@ARGV)>=2) {
 				Carp::croak("Unable to process file $p_sorted->[VCF_SORTED_FILE]. Dying...");
 			}
 		}
-		
-		@joiningFiles = sort(compareVCFlines @joiningFiles);
 		
 		# Third, read all the existing id entries, and open the file
 		print STDERR "Fetching existing entry ids\n";
@@ -265,7 +281,7 @@ if(scalar(@ARGV)>=2) {
 		}
 		
 		# And now, coordinate all of them to push the data!!!!!!
-		print STDERR "Bulk upsert starts (in updates of ",$mapper->bulkBatchSize,")\n";
+		print STDERR "Bulk upsert starts (in batches of ",$mapper->bulkBatchSize,")\n";
 		
 		# my @bulkEntries = ();
 		my $nBulk = 0;
@@ -275,13 +291,34 @@ if(scalar(@ARGV)>=2) {
 		my $numIns = 0;
 		my $numUpd = 0;
 		while($hasOneFile) {
+			my $representative = $joiningFiles[0];
+			my @chosenPos = (0);
+			
+			if($hasManyFiles) {
+				my $candidatePos = 0;
+				foreach my $candidate (@joiningFiles[1..$#joiningFiles]) {
+					$candidatePos++;
+					
+					my $cmp = compareVCFlines($representative,$candidate);
+					
+					# New representative
+					if($cmp>0) {
+						$representative = $candidate;
+						@chosenPos = ($candidatePos);
+					} elsif($cmp==0) {
+						# Belongs to the group
+						push(@chosenPos,$candidatePos);
+					}
+				}
+			}
+			
 			# Choose the least value from the candidates
-			my $reprvalues = $joiningFiles[0]->[VCF_LINE];
-			my $p_metadata = $joiningFiles[0]->[VCF_METADATA];
+			my $reprvalues = $representative->[VCF_LINE];
+			my $p_metadata = $representative->[VCF_METADATA];
 			
 			# Process the winners
 			# unlinking from the original value
-			my $colvalrepr = [@{$joiningFiles[0]->[VCF_LINE_KEYS]}];
+			my $colvalrepr = [@{$representative->[VCF_LINE_KEYS]}];
 			
 			# The data entry
 			my $mutation_type=undef;
@@ -340,12 +377,24 @@ if(scalar(@ARGV)>=2) {
 					if($eqpos!=-1) {
 						$key = substr($keyval,0,$eqpos);
 						$value = substr($keyval,$eqpos+1);
-						my @kvdata = split(/,/,$value,-1);
-						$p_data = (scalar(@kvdata)>1)?\@kvdata:$value;
 					} elsif(exists($p_metadata->{'ID'}{$keyval})) {
 						$key = $keyval;
-					} else {
+					} elsif(defined($prevkey)) {
 						$value = $keyval;
+					} else {
+						$key = $keyval;
+						
+						Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, unknown boolean token $key: ".join(' ',
+								'CHROM' => $reprvalues->[VCF_CHROM_COL],
+								'POS' => $chromosome_start,
+								'ID' => $reprvalues->[VCF_ID_COL],
+							)
+						);
+					}
+					
+					if(defined($value)) {
+						my @kvdata = split(/,/,$value,-1);
+						$p_data = (scalar(@kvdata)>1)?\@kvdata:$value;
 					}
 					
 					if(defined($key)) {
@@ -360,7 +409,7 @@ if(scalar(@ARGV)>=2) {
 								} elsif($oldval ne $value) {
 									$mutationIdent{$IDENTfields{$key}} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 								}
-								#Carp::carp('Illformed VCF file '.$joiningFiles[0]->[VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
+								#Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
 								#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 								#		'POS' => $chromosome_start,
 								#		'ID' => $reprvalues->[VCF_ID_COL],
@@ -376,7 +425,7 @@ if(scalar(@ARGV)>=2) {
 								} elsif($oldval ne $value) {
 									$mutationIdent{'other'}{$key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 								}
-								#Carp::carp('Illformed VCF file '.$joiningFiles[0]->[VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
+								#Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
 								#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 								#		'POS' => $chromosome_start,
 								#		'ID' => $reprvalues->[VCF_ID_COL],
@@ -388,7 +437,7 @@ if(scalar(@ARGV)>=2) {
 						}
 						$prevkey = $key;
 					} else {
-						#Carp::carp('Illformed VCF file '.$joiningFiles[0]->[VCF_FILE]." on ID column, after token $prevkey: ".join(' ',
+						#Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, after token $prevkey: ".join(' ',
 						#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 						#		'POS' => $chromosome_start,
 						#		'ID' => $reprvalues->[VCF_ID_COL],
@@ -410,18 +459,15 @@ if(scalar(@ARGV)>=2) {
 				$entry{'mutation_ident'} = \%mutationIdent
 			}
 			
-			my $equalPos = 0;
-			my @leftFiles = ();
+			my @leftPos = ();
 			my $erased = undef;
-			foreach my $chosen (@joiningFiles) {
-				last  unless($chosen->[VCF_LINE_KEYS] ~~ $colvalrepr);
-				$equalPos++;
+			foreach my $chosenIdx (@chosenPos) {
+				my $chosen = $joiningFiles[$chosenIdx];
 				
 				do {
 					my $tabvalues = $chosen->[VCF_LINE];
 					my $p_metadata = $chosen->[VCF_METADATA];
 					
-					my @sampleFields = split(/:/,$tabvalues->[VCF_FORMAT_COL],-1);
 					# Consolidating the entry
 					my %sampleMutInfo = ();
 					my $total_read_count = -1;
@@ -436,12 +482,24 @@ if(scalar(@ARGV)>=2) {
 						if($eqpos!=-1) {
 							$key = substr($keyval,0,$eqpos);
 							$value = substr($keyval,$eqpos+1);
-							my @kvdata = split(/,/,$value,-1);
-							$p_data = (scalar(@kvdata)>1)?\@kvdata:$value;
 						} elsif(exists($p_metadata->{'INFO'}{$keyval})) {
 							$key = $keyval;
-						} else {
+						} elsif(defined($prevkey)) {
 							$value = $keyval;
+						} else {
+							$key = $keyval;
+							
+							Carp::carp('Illformed VCF file '.$chosen->[VCF_FILE]." on INFO column, unknown boolean token $key: ".join(' ',
+									'CHROM' => $reprvalues->[VCF_CHROM_COL],
+									'POS' => $chromosome_start,
+									'INFO' => $tabvalues->[VCF_INFO_COL],
+								)
+							);
+						}
+						
+						if(defined($value)) {
+							my @kvdata = split(/,/,$value,-1);
+							$p_data = (scalar(@kvdata)>1)?\@kvdata:$value;
 						}
 						
 						if(defined($key)) {
@@ -461,19 +519,19 @@ if(scalar(@ARGV)>=2) {
 								} elsif($oldval ne $value) {
 									$sampleMutInfo{$key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 								}
-								#Carp::carp('Illformed VCF file '.$joiningFiles[0]->[VCF_FILE]." on INFO column, repeated token $key ($oldval <=> $value): ".join(' ',
+								#Carp::carp('Illformed VCF file '.$chosen->[VCF_FILE]." on INFO column, repeated token $key ($oldval <=> $value): ".join(' ',
 								#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 								#		'POS' => $chromosome_start,
-								#		'INFO' => $reprvalues->[VCF_INFO_COL],
+								#		'INFO' => $tabvalues->[VCF_INFO_COL],
 								#	)
 								#)  if($oldval ne $value);
 							}
 							$prevkey = $key;
 						} else {
-							#Carp::carp('Illformed VCF file '.$joiningFiles[0]->[VCF_FILE]." on INFO column, after token $prevkey: ".join(' ',
+							#Carp::carp('Illformed VCF file '.$chosen->[VCF_FILE]." on INFO column, after token $prevkey: ".join(' ',
 							#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 							#		'POS' => $chromosome_start,
-							#		'INFO' => $reprvalues->[VCF_INFO_COL],
+							#		'INFO' => $tabvalues->[VCF_INFO_COL],
 							#	)
 							#);
 							if(ref($sampleMutInfo{$prevkey})) {
@@ -484,6 +542,7 @@ if(scalar(@ARGV)>=2) {
 						}
 					}
 					
+					my @sampleFields = split(/:/,$tabvalues->[VCF_FORMAT_COL],-1);
 					my $samplePos = VCF_FIRST_SAMPLE_COL;
 					foreach my $sample (@{$chosen->[VCF_SAMPLES]}) {
 						my @sampleValues = split(/:/,$tabvalues->[$samplePos],-1);
@@ -516,11 +575,10 @@ if(scalar(@ARGV)>=2) {
 					
 				} while(defined($chosen->[VCF_HANDLER]) && $colvalrepr ~~ $chosen->[VCF_LINE_KEYS]);
 				
-				# Save for next round, but only if it can give us more data!
-				if(defined($chosen->[VCF_HANDLER])) {
-					push(@leftFiles,$chosen);
-				} else {
+				# Keep for next round, but only if it can give us more data!
+				unless(defined($chosen->[VCF_HANDLER])) {
 					$erased = 1;
+					unshift(@leftPos,$chosenIdx);
 				}
 			}
 			
@@ -563,16 +621,18 @@ if(scalar(@ARGV)>=2) {
 			$nBulk ++;
 			
 			# Next round!
-			if($hasManyFiles) {
-				unless($erased) {
-					@joiningFiles = sort compareVCFlines @joiningFiles;
-				} else {
-					@joiningFiles = sort compareVCFlines (@joiningFiles[$equalPos..$#joiningFiles],@leftFiles);
+			if($erased) {
+				if($hasManyFiles) {
+					foreach my $rip (@leftPos) {
+						splice(@joiningFiles,$rip,1);
+					}
+					
 					$hasOneFile = scalar(@joiningFiles)>0;
 					$hasManyFiles = scalar(@joiningFiles)>1;
+				} else {
+					@joiningFiles = ();
+					$hasOneFile = undef;
 				}
-			} elsif($erased) {
-				$hasOneFile = undef;
 			}
 		}
 		if($totalBulk > 0 || $nBulk > 0) {
