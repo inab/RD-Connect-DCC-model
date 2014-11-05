@@ -25,24 +25,13 @@ use BP::Loader::Mapper;
 use BP::Loader::Mapper::Elasticsearch;
 use BP::Loader::Mapper::MongoDB;
 
+use lib $FindBin::Bin."/lib";
+
+use Heap::Elem::VCFElem qw( compareVCFlines compareVCFcols );
+use Heap::VCFPriority;
+
+
 use constant VCF_LOADER_SECTION	=>	'vcf-loader';
-
-use constant {
-	VCF_SORTED_FILE	=>	0,
-	VCF_SAMPLES	=>	1,
-	VCF_HANDLER	=>	2,
-	VCF_LINE	=>	3,
-	VCF_LINE_KEYS	=>	4,
-	VCF_METADATA	=>	5,
-	VCF_FILE	=>	6,
-};
-
-use constant {
-	VCF_CHROM	=>	0,
-	VCF_POS		=>	1,
-	VCF_REF		=>	2,
-	VCF_ALT		=>	3,
-};
 
 use constant {
 	VCF_CHROM_COL	=>	0,
@@ -58,39 +47,6 @@ use constant {
 };
 
 my @VCF_COL_KEYS = (VCF_CHROM_COL,VCF_POS_COL,VCF_REF_COL,VCF_ALT_COL);
-
-sub compareVCFlines($$);
-sub compareVCFcols($$);
-
-sub compareVCFlines($$) {
-	my($nleft,$nright)=@_;
-	
-	return compareVCFcols($nleft->[VCF_LINE_KEYS],$nright->[VCF_LINE_KEYS]);
-}
-
-sub compareVCFcols($$) {
-	my($left,$right)=@_;
-	
-	if($left ~~ $right) {
-		return 0;
-	} elsif($left->[VCF_CHROM] lt $right->[VCF_CHROM] || (
-			$left->[VCF_CHROM] eq $right->[VCF_CHROM] && (
-				$left->[VCF_POS] < $right->[VCF_POS] || (
-					$left->[VCF_POS] == $right->[VCF_POS] && (
-						$left->[VCF_REF] lt $right->[VCF_REF] || (
-							$left->[VCF_REF] eq $right->[VCF_REF] && $left->[VCF_ALT] lt $right->[VCF_ALT]
-						)
-					)
-				)
-			)
-		)
-	) {
-		# It's over!!!!!
-		return -1;
-	} else {
-		return 1;
-	}
-}
 
 # Shared by all the instances
 my $numsorted :shared;
@@ -159,7 +115,7 @@ sub sortWorker($$$$) {
 				}
 				# We record the sorted file and the sample names
 				my $p_sorted = [];
-				@{$p_sorted}[VCF_FILE,VCF_SORTED_FILE,VCF_SAMPLES,VCF_METADATA] = ($vcffile,$sortedFile,$p_samples,\%metadata);
+				@{$p_sorted}[Heap::Elem::VCFElem::VCF_FILE,Heap::Elem::VCFElem::VCF_SORTED_FILE,Heap::Elem::VCFElem::VCF_SAMPLES,Heap::Elem::VCFElem::VCF_METADATA] = ($vcffile,$sortedFile,$p_samples,\%metadata);
 				
 				push(@sortedFiles,$p_sorted);
 			}
@@ -373,15 +329,15 @@ if(scalar(@ARGV)>=2) {
 			my @joiningFiles = splice(@totalJoiningFiles,0,$maxFilesPerBatch);
 			# Second pass, reopen all the files and read each first line
 			foreach my $p_sorted (@joiningFiles) {
-				if(open(my $VCF,'-|',BP::Loader::CorrelatableConcept::GUNZIP,'-c',$p_sorted->[VCF_SORTED_FILE])) {
+				if(open(my $VCF,'-|',BP::Loader::CorrelatableConcept::GUNZIP,'-c',$p_sorted->[Heap::Elem::VCFElem::VCF_SORTED_FILE])) {
 					my $first = <$VCF>;
 					chomp($first);
 					my @colvalues = split(/\t/,$first,-1);
-					$p_sorted->[VCF_HANDLER] = $VCF;
-					$p_sorted->[VCF_LINE] = \@colvalues;
-					$p_sorted->[VCF_LINE_KEYS] = [@colvalues[@VCF_COL_KEYS]];
+					$p_sorted->[Heap::Elem::VCFElem::VCF_HANDLER] = $VCF;
+					$p_sorted->[Heap::Elem::VCFElem::VCF_LINE] = \@colvalues;
+					$p_sorted->[Heap::Elem::VCFElem::VCF_LINE_KEYS] = [@colvalues[@VCF_COL_KEYS]];
 				} else {
-					Carp::croak("Unable to process file $p_sorted->[VCF_SORTED_FILE]. Dying...");
+					Carp::croak("Unable to process file $p_sorted->[Heap::Elem::VCFElem::VCF_SORTED_FILE]. Dying...");
 				}
 			}
 			print "Upserting files from ",$numFiles+1," to ",$numFiles+scalar(@joiningFiles),"\n";
@@ -440,12 +396,12 @@ if(scalar(@ARGV)>=2) {
 				}
 				
 				# Choose the least value from the candidates
-				my $reprvalues = $representative->[VCF_LINE];
-				my $p_metadata = $representative->[VCF_METADATA];
+				my $reprvalues = $representative->[Heap::Elem::VCFElem::VCF_LINE];
+				my $p_metadata = $representative->[Heap::Elem::VCFElem::VCF_METADATA];
 				
 				# Process the winners
 				# unlinking from the original value
-				my $colvalrepr = [@{$representative->[VCF_LINE_KEYS]}];
+				my $colvalrepr = [@{$representative->[Heap::Elem::VCFElem::VCF_LINE_KEYS]}];
 				
 				# The data entry
 				my $mutation_type=undef;
@@ -511,7 +467,7 @@ if(scalar(@ARGV)>=2) {
 						} else {
 							$key = $keyval;
 							
-							Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, unknown boolean token $key: ".join(' ',
+							Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, unknown boolean token $key: ".join(' ',
 									'CHROM' => $reprvalues->[VCF_CHROM_COL],
 									'POS' => $chromosome_start,
 									'ID' => $reprvalues->[VCF_ID_COL],
@@ -536,7 +492,7 @@ if(scalar(@ARGV)>=2) {
 									} elsif($oldval ne $value) {
 										$mutationIdent{$IDENTfields{$key}} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 									}
-									#Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
+									#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
 									#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 									#		'POS' => $chromosome_start,
 									#		'ID' => $reprvalues->[VCF_ID_COL],
@@ -552,7 +508,7 @@ if(scalar(@ARGV)>=2) {
 									} elsif($oldval ne $value) {
 										$mutationIdent{'other'}{$key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 									}
-									#Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
+									#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
 									#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 									#		'POS' => $chromosome_start,
 									#		'ID' => $reprvalues->[VCF_ID_COL],
@@ -564,7 +520,7 @@ if(scalar(@ARGV)>=2) {
 							}
 							$prevkey = $key;
 						} else {
-							#Carp::carp('Illformed VCF file '.$representative->[VCF_FILE]." on ID column, after token $prevkey: ".join(' ',
+							#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, after token $prevkey: ".join(' ',
 							#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 							#		'POS' => $chromosome_start,
 							#		'ID' => $reprvalues->[VCF_ID_COL],
@@ -592,8 +548,8 @@ if(scalar(@ARGV)>=2) {
 					my $chosen = $joiningFiles[$chosenIdx];
 					
 					do {
-						my $tabvalues = $chosen->[VCF_LINE];
-						my $p_metadata = $chosen->[VCF_METADATA];
+						my $tabvalues = $chosen->[Heap::Elem::VCFElem::VCF_LINE];
+						my $p_metadata = $chosen->[Heap::Elem::VCFElem::VCF_METADATA];
 						
 						# Consolidating the entry
 						my %sampleMutInfo = ();
@@ -616,7 +572,7 @@ if(scalar(@ARGV)>=2) {
 							} else {
 								$key = $keyval;
 								
-								Carp::carp('Illformed VCF file '.$chosen->[VCF_FILE]." on INFO column, unknown boolean token $key: ".join(' ',
+								Carp::carp('Illformed VCF file '.$chosen->[Heap::Elem::VCFElem::VCF_FILE]." on INFO column, unknown boolean token $key: ".join(' ',
 										'CHROM' => $reprvalues->[VCF_CHROM_COL],
 										'POS' => $chromosome_start,
 										'INFO' => $tabvalues->[VCF_INFO_COL],
@@ -646,7 +602,7 @@ if(scalar(@ARGV)>=2) {
 									} elsif($oldval ne $value) {
 										$sampleMutInfo{$key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 									}
-									#Carp::carp('Illformed VCF file '.$chosen->[VCF_FILE]." on INFO column, repeated token $key ($oldval <=> $value): ".join(' ',
+									#Carp::carp('Illformed VCF file '.$chosen->[Heap::Elem::VCFElem::VCF_FILE]." on INFO column, repeated token $key ($oldval <=> $value): ".join(' ',
 									#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 									#		'POS' => $chromosome_start,
 									#		'INFO' => $tabvalues->[VCF_INFO_COL],
@@ -655,7 +611,7 @@ if(scalar(@ARGV)>=2) {
 								}
 								$prevkey = $key;
 							} else {
-								#Carp::carp('Illformed VCF file '.$chosen->[VCF_FILE]." on INFO column, after token $prevkey: ".join(' ',
+								#Carp::carp('Illformed VCF file '.$chosen->[Heap::Elem::VCFElem::VCF_FILE]." on INFO column, after token $prevkey: ".join(' ',
 								#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
 								#		'POS' => $chromosome_start,
 								#		'INFO' => $tabvalues->[VCF_INFO_COL],
@@ -671,7 +627,7 @@ if(scalar(@ARGV)>=2) {
 						
 						my @sampleFields = split(/:/,$tabvalues->[VCF_FORMAT_COL],-1);
 						my $samplePos = VCF_FIRST_SAMPLE_COL;
-						foreach my $sample (@{$chosen->[VCF_SAMPLES]}) {
+						foreach my $sample (@{$chosen->[Heap::Elem::VCFElem::VCF_SAMPLES]}) {
 							my @sampleValues = split(/:/,$tabvalues->[$samplePos],-1);
 							my %sampleMutData = map { $sampleFields[$_] => $sampleValues[$_] } (0..$#sampleFields);
 							my %dataEntry = (
@@ -689,25 +645,25 @@ if(scalar(@ARGV)>=2) {
 						}
 						
 						# Preparing next read
-						if($chosen->[VCF_HANDLER]->eof) {
-							$chosen->[VCF_HANDLER]->close();
-							$chosen->[VCF_HANDLER] = undef;
+						if($chosen->[Heap::Elem::VCFElem::VCF_HANDLER]->eof) {
+							$chosen->[Heap::Elem::VCFElem::VCF_HANDLER]->close();
+							$chosen->[Heap::Elem::VCFElem::VCF_HANDLER] = undef;
 							unless($presorted) {
-								print "Removing temp sorted file based on ",$chosen->[VCF_FILE],"\n";
-								unlink($chosen->[VCF_SORTED_FILE]);
+								print "Removing temp sorted file based on ",$chosen->[Heap::Elem::VCFElem::VCF_FILE],"\n";
+								unlink($chosen->[Heap::Elem::VCFElem::VCF_SORTED_FILE]);
 							}
 						} else {
-							my $line = $chosen->[VCF_HANDLER]->getline();
+							my $line = $chosen->[Heap::Elem::VCFElem::VCF_HANDLER]->getline();
 							chomp($line);
 							my @tokens = split(/\t/,$line,-1);
-							@{$chosen->[VCF_LINE]} = @tokens;
-							@{$chosen->[VCF_LINE_KEYS]} = @tokens[@VCF_COL_KEYS];
+							@{$chosen->[Heap::Elem::VCFElem::VCF_LINE]} = @tokens;
+							@{$chosen->[Heap::Elem::VCFElem::VCF_LINE_KEYS]} = @tokens[@VCF_COL_KEYS];
 						}
 						
-					} while(defined($chosen->[VCF_HANDLER]) && $colvalrepr ~~ $chosen->[VCF_LINE_KEYS]);
+					} while(defined($chosen->[Heap::Elem::VCFElem::VCF_HANDLER]) && $colvalrepr ~~ $chosen->[Heap::Elem::VCFElem::VCF_LINE_KEYS]);
 					
 					# Keep for next round, but only if it can give us more data!
-					unless(defined($chosen->[VCF_HANDLER])) {
+					unless(defined($chosen->[Heap::Elem::VCFElem::VCF_HANDLER])) {
 						$erased = 1;
 						unshift(@leftPos,$chosenIdx);
 					}
