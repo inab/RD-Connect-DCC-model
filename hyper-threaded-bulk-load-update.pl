@@ -169,10 +169,93 @@ sub upsertWorker($$) {
 	return ($numIns,$numUpd);
 }
 
+sub storeVal(\%$\%$$) {
+	my($p_hash,$p_last_key,$p_keymapping,$p_data,$value) = @_;
+	
+	if($p_keymapping->{$p_last_key}) {
+		my $p_keys = $p_keymapping->{$p_last_key};
+		
+		my $p_last = $#{$p_keys};
+		foreach my $p_pos (0..($p_last-1)) {
+			my $key = $p_keys->[$p_pos];
+			$p_hash->{$key} = {}  unless(exists($p_hash->{$key}));
+			$p_hash = $p_hash->{$key};
+		}
+		
+		$p_last_key = $p_keys->[-1];
+	} else {
+		$p_hash->{'other'} = {}  unless(exists($p_hash->{'other'}));
+		$p_hash = $p_hash->{'other'};
+	}
+	
+	unless(exists($p_hash->{$p_last_key})) {
+		$p_hash->{$p_last_key} = $p_data;
+	} elsif(defined($value) && $value ne '.') {
+		# We don't know what to do here!
+		my $oldval = $p_hash->{$p_last_key};
+		if(ref($oldval)) {
+			push(@{$oldval},(ref($p_data)?@{$p_data}:($p_data)));
+		} elsif($oldval ne $value) {
+			$p_hash->{$p_last_key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
+		}
+		#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
+		#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
+		#		'POS' => $chromosome_start,
+		#		'ID' => $reprvalues->[VCF_ID_COL],
+		#	)
+		#)  if($oldval ne $value);
+	}
+}
+
 
 my %IDENTfields = (
-	'RS'	=>	'RScode',
-	'dbSNPBuildID'	=>	'dbSNPBuildID'
+	'RS'	=>	['RScode'],
+	'dbSNPBuildID'	=>	['dbSNPBuildID'],
+);
+
+my %effectFields = (
+	'SIFT_pred'	=>	['SIFT','pred'],
+	'SIFT_score'	=>	['SIFT','score'],
+	'Polyphen2_HDIV_pred'	=>	['Polyphen2','HDIV_pred'],
+	'Polyphen2_HVAR_pred'	=>	['Polyphen2','HVAR_pred'],
+	'pp2'	=>	['Polyphen2','score'],
+	'Polyphen2_HDIV_score'	=>	['Polyphen2','HDIV_score'],
+	'Polyphen2_HVAR_score'	=>	['Polyphen2','HVAR_score'],
+	'MutationTaster_pred'	=>	['MutationTaster','pred'],
+	'mt'	=>	['MutationTaster','score'],
+	'phyloP46way_placental'	=>	undef,
+	'gerp++_RS'	=>	undef,
+	'SiPhy_29way_pi'	=>	undef,
+	'CADD_phred'	=>	undef,
+	'UMD_pred'	=>	['UMD','pred'],
+	'UMD_score'	=>	['UMD','score'],
+	'HSF_pred'	=>	undef,
+);
+
+my %popFields = (
+	'GMAF'	=>	['GMAF'],
+	'esp5400_all'	=>	['esp5400','all'],
+	'esp5400_ea'	=>	['esp5400','ea'],
+	'esp5400_aa'	=>	['esp5400','aa'],
+	'1000Gp1_AFR_AF'	=>	['af1000gp1','afr'],
+	'1000Gp1_ASN_AF'	=>	['af1000gp1','asn'],
+	'1000Gp1_EUR_AF'	=>	['af1000gp1','eur'],
+);
+
+my %NOFIELDS = ();
+
+my %EFFMAP = (
+	'GeneName' => 5,
+#	'GeneID' => 4,
+	'Coding' => 7,
+	'TranscriptBioType' => 6,
+	'Effect_Impact' => 0,
+	'Functional_Class' => 1,
+	'Codon_Change' => 2,
+	'Amino_Acid_change' => 3,
+	'Transcript' => 8,
+	'Genotype_Number' => 10,
+	'Exon_Rank' => 9,
 );
 
 my $presorted = undef;
@@ -451,6 +534,13 @@ if(scalar(@ARGV)>=2) {
 						'other'	=> {},
 					);
 					
+					my %effectPrediction = (
+						'other'	=> {},
+					);
+					
+					my %population = (
+					);
+					
 					my $prevkey = undef;
 					foreach my $keyval (split(/;/,$reprvalues->[VCF_ID_COL],-1)) {
 						my $eqpos = index($keyval,'=');
@@ -480,66 +570,51 @@ if(scalar(@ARGV)>=2) {
 							$p_data = (scalar(@kvdata)>1)?\@kvdata:$value;
 						}
 						
-						if(defined($key)) {
-							if(exists($IDENTfields{$key})) {
-								unless(exists($mutationIdent{$IDENTfields{$key}})) {
-									$mutationIdent{$IDENTfields{$key}} = $p_data;
-								} elsif(defined($value) && $value ne '.') {
-									# We don't know what to do here!
-									my $oldval = $mutationIdent{$IDENTfields{$key}};
-									if(ref($oldval)) {
-										push(@{$oldval},(ref($p_data)?@{$p_data}:($p_data)));
-									} elsif($oldval ne $value) {
-										$mutationIdent{$IDENTfields{$key}} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
-									}
-									#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
-									#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
-									#		'POS' => $chromosome_start,
-									#		'ID' => $reprvalues->[VCF_ID_COL],
-									#	)
-									#)  if($oldval ne $value);
-								}
-							} elsif(exists($mutationIdent{'other'}{$key})) {
-								if(defined($value) && $value ne '.') {
-									# We don't know what to do here!
-									my $oldval = $mutationIdent{'other'}{$key};
-									if(ref($oldval)) {
-										push(@{$oldval},(ref($p_data)?@{$p_data}:($p_data)));
-									} elsif($oldval ne $value) {
-										$mutationIdent{'other'}{$key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
-									}
-									#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
-									#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
-									#		'POS' => $chromosome_start,
-									#		'ID' => $reprvalues->[VCF_ID_COL],
-									#	)
-									#)  if($oldval ne $value);
-								}
-							} else {
-								$mutationIdent{'other'}{$key} = $p_data;
-							}
-							$prevkey = $key;
+						$prevkey = $key  if(defined($key));
+						if(exists($IDENTfields{$prevkey})) {
+							storeVal(%mutationIdent,$prevkey,%IDENTfields,$p_data,$value);
+						} elsif(exists($effectFields{$prevkey})) {
+							storeVal(%effectPrediction,$prevkey,%effectFields,$p_data,$value);
+						} elsif(exists($popFields{$prevkey})) {
+							storeVal(%population,$prevkey,%popFields,$p_data,$value);
 						} else {
-							#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, after token $prevkey: ".join(' ',
-							#		'CHROM' => $reprvalues->[VCF_CHROM_COL],
-							#		'POS' => $chromosome_start,
-							#		'ID' => $reprvalues->[VCF_ID_COL],
-							#	)
-							#);
-							if(exists($IDENTfields{$prevkey})) {
-								if(ref($IDENTfields{$prevkey})) {
-									push(@{$mutationIdent{$IDENTfields{$prevkey}}},(ref($p_data)?@{$p_data}:($p_data)));
-								} else {
-									$mutationIdent{$IDENTfields{$prevkey}} = [$mutationIdent{$IDENTfields{$prevkey}},(ref($p_data)?@{$p_data}:($p_data))];
-								}
-							} elsif(ref($mutationIdent{'other'}{$prevkey})) {
-								push(@{$mutationIdent{'other'}{$prevkey}},(ref($p_data)?@{$p_data}:($p_data)));
-							} else {
-								$mutationIdent{'other'}{$prevkey} = [$mutationIdent{'other'}{$prevkey},(ref($p_data)?@{$p_data}:($p_data))];
+							storeVal(%mutationIdent,$prevkey,%NOFIELDS,$p_data,$value);
+						}
+					}
+					$entry{'mutation_ident'} = \%mutationIdent;
+					$entry{'effect_prediction'} = \%effectPrediction;
+					$entry{'population'} = \%population;
+				}
+				
+				if($reprvalues->[VCF_INFO_COL] ne '.') {
+					my @EFF = ();
+					foreach my $keyval (split(/;/,$reprvalues->[VCF_INFO_COL],-1)) {
+						my $eqpos = index($keyval,'=');
+						my $key = undef;
+						my $value=undef;
+						my $p_data = undef;
+						if($eqpos!=-1) {
+							$key = substr($keyval,0,$eqpos);
+							next  unless($key eq 'EFF');
+							
+							$value = substr($keyval,$eqpos+1);
+							my @effects = split(/,/,$value);
+							foreach my $effect (@effects) {
+								my $leftPar = index($effect,'(');
+								my $rightPar = rindex($effect,')');
+								my %effect = (
+									'Effect'	=>	substr($effect,0,$leftPar)
+								);
+								
+								my @values = split(/|/,substr(substr($effect,0,$rightPar),$leftPar+1),-1);
+								
+								@effect{keys(%EFFMAP)} = @values[values(%EFFMAP)];
+								
+								push(@EFF,\%effect);
 							}
 						}
 					}
-					$entry{'mutation_ident'} = \%mutationIdent
+					$entry{'functional_annotation'} = \@EFF;
 				}
 				
 				my @leftPos = ();
@@ -564,6 +639,9 @@ if(scalar(@ARGV)>=2) {
 							my $p_data = undef;
 							if($eqpos!=-1) {
 								$key = substr($keyval,0,$eqpos);
+								
+								next  if($key eq 'EFF');
+								
 								$value = substr($keyval,$eqpos+1);
 							} elsif(exists($p_metadata->{'INFO'}{$keyval})) {
 								$key = $keyval;

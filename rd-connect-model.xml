@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dcc-schema
         project="RD-Connect"
-        schemaVer="0.1.3"
+        schemaVer="0.1.4"
         
         xmlns="http://www.blueprint-epigenome.eu/dcc/schema"
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
@@ -1663,6 +1663,264 @@
 				</column-type>
 			</column>
 			
+			<column name="effect_prediction">
+				<description>Effect prediction information</description>
+				<column-type item-type="compound" column-kind="optional">
+					<compound-type>
+						<column name="SIFT">
+							<description>SIFT values</description>
+							<column-type item-type="compound" column-kind="optional">
+								<compound-type>
+									<column name="pred">
+										<description>SIFT prediction, D (damaging) or T (tolerated)</description>
+										<column-type item-type="string" column-kind="optional">
+											<cv>
+												<e v="D">Damaging</e>
+												<e v="T">Tolerated</e>
+											</cv>
+										</column-type>
+									</column>
+									<sep>;</sep>
+									<column name="score">
+										<description>SIFT score, values between 0 and 1; the larger the more damaging.</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="Polyphen2">
+							<description>Polyphen2 values</description>
+							<column-type item-type="compound" column-kind="optional">
+								<compound-type>
+									<column name="HDIV_pred">
+										<description>Polyphen2_HDIV prediction, D (probably damaging), P (possibly damaging) or B (benign)</description>
+										<column-type item-type="string" column-kind="optional">
+											<cv>
+												<e v="D">Probably damaging</e>
+												<e v="P">Possibly damaging</e>
+												<e v="B">Benign</e>
+											</cv>
+										</column-type>
+									</column>
+									<sep>;</sep>
+									<column name="HVAR_pred">
+										<description>Polyphen2_HVAR prediction, D (probably damaging), P (possibly damaging) or B (benign)</description>
+										<column-type item-type="string" column-kind="optional">
+											<cv>
+												<e v="D">Probably damaging</e>
+												<e v="P">Possibly damaging</e>
+												<e v="B">Benign</e>
+											</cv>
+										</column-type>
+									</column>
+									<sep>;</sep>
+									<column name="score">
+										<description>PolyPhen2 score value. Values between 0 and 1; deleterious variants tend to have values closer to 1. (http://genetics.bwh.harvard.edu/pph2/)</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+									<sep>;</sep>
+									<column name="HDIV_score">
+										<description>Polyphen2_HDIV_score</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+									<sep>;</sep>
+									<column name="HVAR_score">
+										<description>Polyphen2_HVAR_score</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="MutationTaster">
+							<description>MutationTaster values</description>
+							<column-type item-type="compound" column-kind="optional">
+								<compound-type>
+									<column name="pred">
+										<description>Prediction of the functional impact of the variant according to MutationTaster: May be A (disease-causing-automatic, determined from external information), D (disease-causing, calculated by the MutationTaster algorithm), N (polymorphism, calculated by the MutationTaster algorithm) or "P" (polymorphism-automatic, determined from external information).</description>
+										<column-type item-type="string" column-kind="optional">
+											<cv>
+												<e v="A">disease-causing-automatic, determined from external information</e>
+												<e v="D">disease-causing, calculated by the MutationTaster algorithm</e>
+												<e v="N">polymorphism, calculated by the MutationTaster algorithm</e>
+												<e v="P">polymorphism-automatic, determined from external information</e>
+											</cv>
+										</column-type>
+									</column>
+									<sep>;</sep>
+									<column name="score">
+										<description>MutationTaster score value. Values between 0 and 1; deleterious variants tend to have values closer to 1. (http://www.mutationtaster.org/)</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="UMD">
+							<description>UMD values</description>
+							<column-type item-type="compound" column-kind="optional">
+								<compound-type>
+									<column name="pred">
+										<description>Based on UMD_score; &lt;50 benign polymorphism; 50-64 probably benign polymorphism; 65-74 probably pathogenic mutation; 75+ pathogenic mutation</description>
+										<column-type item-type="string" column-kind="optional">
+											<cv>
+												<e v="&lt;50">benign polymorphism</e>
+												<e v="50-64">probably benign polymorphism</e>
+												<e v="65-74">probably pathogenic mutation</e>
+												<e v="75+">pathogenic mutation</e>
+											</cv>
+										</column-type>
+									</column>
+									<sep>;</sep>
+									<column name="score">
+										<description>A value between 0-100, indicating increasing probability of pathogencity</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="other">
+							<description>Fields phyloP46way_placental, gerp++_RS, SiPhy_29way_pi, CADD_phred and HSF_pred</description>
+							<column-type item-type="string" column-kind="required" container-type="hash" hash-key-sep="=" hash-value-sep=";"/>
+						</column>
+					</compound-type>
+				</column-type>
+			</column>
+			
+			<column name="population">
+				<description>Population information</description>
+				<column-type item-type="compound" column-kind="optional">
+					<compound-type>
+						<column name="GMAF">
+							<description>Global Minor Allele Frequency of the variant, from 1000 genomes project data</description>
+							<column-type item-type="decimal" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="esp5400">
+							<description>esp5400 values</description>
+							<column-type item-type="compound" column-kind="optional">
+								<compound-type>
+									<column name="all">
+										<description>Alternative allele frequency in all 5400 NHLBI exomes (http://evs.gs.washington.edu/EVS/ )</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+									<sep>;</sep>
+									<column name="ea">
+										<description>Alt allele freq in 5400 NHLBI exomes of 3510 Europe Americans.</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+									<sep>;</sep>
+									<column name="aa">
+										<description>Alt allele freq in 5400 NHLBI exomes in 1869 African Americans.</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="af1000gp1">
+							<description>Alternative allele frequency values</description>
+							<column-type item-type="compound" column-kind="optional">
+								<compound-type>
+									<column name="afr">
+										<description>Alternative allele frequency in 1000 genomes project (Phase 1) Africans</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+									<sep>;</sep>
+									<column name="asn">
+										<description>Alternative allele frequency in 1000 genomes project (Phase 1) Asians</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+									<sep>;</sep>
+									<column name="eur">
+										<description>Alternative allele frequency in 1000 genomes project (Phase 1) Europeans</description>
+										<column-type item-type="decimal" column-kind="optional"/>
+									</column>
+								</compound-type>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="RDCPfreq">
+							<description>In future we may have a field for RD-Connect and/or Neuromics/Eurenomics allele frequencies</description>
+							<column-type item-type="decimal" column-kind="optional"/>
+						</column>
+					</compound-type>
+				</column-type>
+			</column>
+			
+			<column name="functional_annotation">
+				<description>Functional annotation information</description>
+				<column-type item-type="compound" column-kind="optional" container-type="set" set-seps=",">
+					<compound-type>
+						<column name="GeneName">
+							<description>The name of the gene overlapping this position in HGNC gene symbol format. (http://www.genenames.org) Gene_Name in SNPeff.</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="GeneId">
+							<description>Ensembl Gene ID.</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Coding">
+							<description>Values are CODING or NON_CODING. This field is 'CODING' if any transcript of the gene is marked as protein coding.</description>
+							<column-type item-type="string" column-kind="optional">
+								<cv>
+									<e v="CODING">Coding</e>
+									<e v="NON_CODING">Non coding</e>
+								</cv>
+							</column-type>
+						</column>
+						<sep>;</sep>
+						<column name="TranscriptBioType">
+							<description>Transcript biotype, as reported by Ensembl, e.g. protein_coding, antisense, miRNA etc.</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Effect">
+							<description>e.g. STOP_GAINED, SYNONYMOUS CODING etc. SNPeff has a long list of effect types as shown in the manual (http://snpeff.sourceforge.net/SnpEff_manual.html)</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Effect_Impact">
+							<description>One of High, Moderate, Low, Modifier. Effect_Impact from SNPeff</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Functional_Class">
+							<description>One of MISSENSE, NONSENSE, SILENT or none.</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Codon_Change">
+							<description>e.g. aaC/aaT</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Amino_Acid_change">
+							<description>e.g. A320V (alanine at position 320 changed to valine), T442* (threonine becomes stop), W99 (no change), *501T (stop becomes threonine), IF508I (deletion of phenylalanine at position 508, which was following an isoleucine at position 507), M1L (start loss), -646SKSP (after position 646, there is a 12bp insertion generating codons for SKSP)</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Transcript">
+							<description>Usually Ensembl Transcript ID e.g. ENST00000003084</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Genotype_Number">
+							<description>In cases where there are multiple alternative alleles, the integer here indicates which allele is generating the corresponding affect in the transcript under investigation</description>
+							<column-type item-type="integer" column-kind="optional"/>
+						</column>
+						<sep>;</sep>
+						<column name="Exon_Rank">
+							<description>Exon Rank in corresponding transcript</description>
+							<column-type item-type="string" column-kind="optional"/>
+						</column>
+					</compound-type>
+				</column-type>
+			</column>
 			
 			<column name="reference_genome_allele">
 				<description>Allele in the reference genome. For insertions, use a dash. For all other types of mutations, use forward strand DNA sequence at the reference genome position as specified in chromosome, <xhtml:b><xhtml:tt>chromosome_start</xhtml:tt></xhtml:b> and <xhtml:b><xhtml:tt>chromosome_end</xhtml:tt></xhtml:b></description>
