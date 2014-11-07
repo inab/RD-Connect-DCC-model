@@ -46,6 +46,8 @@ use constant {
 	VCF_FIRST_SAMPLE_COL	=>	9,
 };
 
+use constant BASELINENO => '___b___';
+
 my @VCF_COL_KEYS = (VCF_CHROM_COL,VCF_POS_COL,VCF_REF_COL,VCF_ALT_COL);
 
 # Shared by all the instances
@@ -75,6 +77,7 @@ sub sortWorker($$$$) {
 					$baselineno = $lineno+1;
 					my @columns = split(/\t/,$header,-1);
 					$p_samples = [ @columns[9..$#columns] ];
+					$metadata{+BASELINENO} = $baselineno;
 					
 					last;
 				} else {
@@ -189,13 +192,13 @@ sub storeVal(\%$\%$$) {
 	}
 	
 	unless(exists($p_hash->{$p_last_key})) {
-		$p_hash->{$p_last_key} = $p_data;
+		$p_hash->{$p_last_key} = (!defined($value) || $value ne '.')?$p_data:undef;
 	} elsif(defined($value) && $value ne '.') {
 		# We don't know what to do here!
 		my $oldval = $p_hash->{$p_last_key};
 		if(ref($oldval)) {
 			push(@{$oldval},(ref($p_data)?@{$p_data}:($p_data)));
-		} elsif($oldval ne $value) {
+		} elsif(defined($oldval) && $oldval ne $value) {
 			$p_hash->{$p_last_key} = [$oldval,(ref($p_data)?@{$p_data}:($p_data))];
 		}
 		#Carp::carp('Illformed VCF file '.$representative->[Heap::Elem::VCFElem::VCF_FILE]." on ID column, repeated token $key ($oldval <=> $value): ".join(' ',
@@ -412,7 +415,15 @@ if(scalar(@ARGV)>=2) {
 			my @joiningFiles = splice(@totalJoiningFiles,0,$maxFilesPerBatch);
 			# Second pass, reopen all the files and read each first line
 			foreach my $p_sorted (@joiningFiles) {
-				if(open(my $VCF,'-|',BP::Loader::CorrelatableConcept::GUNZIP,'-c',$p_sorted->[Heap::Elem::VCFElem::VCF_SORTED_FILE])) {
+				my $baselineno = $presorted?$p_sorted->[Heap::Elem::VCFElem::VCF_METADATA]{+BASELINENO}:undef;
+				my $vcffile = $p_sorted->[defined($baselineno)?Heap::Elem::VCFElem::VCF_SORTED_FILE:Heap::Elem::VCFElem::VCF_FILE];
+				if(open(my $VCF,'-|',BP::Loader::CorrelatableConcept::GUNZIP,'-c',$vcffile)) {
+					if($baselineno) {
+						while($baselineno > 0) {
+							<$VCF>;
+							$baselineno--;
+						}
+					}
 					my $first = <$VCF>;
 					chomp($first);
 					my @colvalues = split(/\t/,$first,-1);
@@ -420,7 +431,7 @@ if(scalar(@ARGV)>=2) {
 					$p_sorted->[Heap::Elem::VCFElem::VCF_LINE] = \@colvalues;
 					$p_sorted->[Heap::Elem::VCFElem::VCF_LINE_KEYS] = [@colvalues[@VCF_COL_KEYS]];
 				} else {
-					Carp::croak("Unable to process file $p_sorted->[Heap::Elem::VCFElem::VCF_SORTED_FILE]. Dying...");
+					Carp::croak("Unable to process file $vcffile. Dying...");
 				}
 			}
 			print "Upserting files from ",$numFiles+1," to ",$numFiles+scalar(@joiningFiles),"\n";
@@ -606,7 +617,7 @@ if(scalar(@ARGV)>=2) {
 									'Effect'	=>	substr($effect,0,$leftPar)
 								);
 								
-								my @values = split(/|/,substr(substr($effect,0,$rightPar),$leftPar+1),-1);
+								my @values = split(/\|/,substr(substr($effect,0,$rightPar),$leftPar+1),-1);
 								
 								@effect{keys(%EFFMAP)} = @values[values(%EFFMAP)];
 								
