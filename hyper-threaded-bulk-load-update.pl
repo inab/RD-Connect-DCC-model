@@ -619,7 +619,11 @@ if(scalar(@ARGV)>=2) {
 								
 								my @values = split(/\|/,substr(substr($effect,0,$rightPar),$leftPar+1),-1);
 								
-								@effect{keys(%EFFMAP)} = @values[values(%EFFMAP)];
+								#@effect{keys(%EFFMAP)} = @values[values(%EFFMAP)];
+								foreach my $effkey (keys(%EFFMAP)) {
+									my $effval = $values[$EFFMAP{$effkey}];
+									$effect{$effkey} = $effval  if(length($effval) > 0);
+								}
 								
 								push(@EFF,\%effect);
 							}
