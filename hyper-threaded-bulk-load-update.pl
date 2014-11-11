@@ -416,10 +416,10 @@ if(scalar(@ARGV)>=2) {
 			# Second pass, reopen all the files and read each first line
 			foreach my $p_sorted (@joiningFiles) {
 				my $baselineno = $presorted?$p_sorted->[Heap::Elem::VCFElem::VCF_METADATA]{+BASELINENO}:undef;
-				my $vcffile = $p_sorted->[defined($baselineno)?Heap::Elem::VCFElem::VCF_SORTED_FILE:Heap::Elem::VCFElem::VCF_FILE];
+				my $vcffile = $p_sorted->[defined($baselineno)?Heap::Elem::VCFElem::VCF_FILE:Heap::Elem::VCFElem::VCF_SORTED_FILE];
 				if(open(my $VCF,'-|',BP::Loader::CorrelatableConcept::GUNZIP,'-c',$vcffile)) {
 					if($baselineno) {
-						while($baselineno > 0) {
+						while($baselineno >= 0) {
 							<$VCF>;
 							$baselineno--;
 						}
