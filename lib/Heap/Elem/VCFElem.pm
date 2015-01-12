@@ -29,6 +29,7 @@ use constant {
 	VCF_LINE_KEYS	=>	4,
 	VCF_METADATA	=>	5,
 	VCF_FILE	=>	6,
+	VCF_JOIN_POS	=>	7,
 };
 
 use constant {

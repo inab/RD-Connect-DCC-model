@@ -170,8 +170,7 @@ sub get_heap {
 sub next_level {
     return unless defined($_[0]->{'.heap'});
     my $elem = $_[0]->{'.heap'}->top;
-    return unless defined($elem);
-    return($elem->val);
+    return $elem;
 }
 
 sub next_item {
@@ -241,8 +240,7 @@ sub pop_queue {
 	return unless defined($self->{'.queues'});
 	
 	# As we want the whole priority queue, update it
-	my $retval = $self->{'.queues'}->{$priority};
-	delete $self->{'.queues'}->{$priority};
+	my $retval = delete $self->{'.queues'}->{$priority};
 	my $garbage = $self->{'.heap'}->extract_top;
 	
 	# Update the statistics
